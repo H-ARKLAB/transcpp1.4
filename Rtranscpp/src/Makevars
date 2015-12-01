@@ -1,0 +1,2 @@
+PKG_CPPFLAGS += -O3 -I../../
+PKG_LIBS += -L./ -lorganism
