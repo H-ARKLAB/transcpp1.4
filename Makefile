@@ -1,18 +1,29 @@
-XML_CFLAGS = `xml2-config --cflags`
-XML_LIBS =  `xml2-config --libs`
+#################################################################################
+#                                                                               #
+#        Makefile for Reinitz lab transcription model                           #
+#                                                                               #
+#        The options below can be different depending on your personal          #
+#        installation. To use this file hassle free I reccomend setting         #
+#        these options as environmental variable in your own .bashrc            #
+#        so that these do not need to be updated every time you update code     #
+#                                                                               #
+#################################################################################
 
-CC  ?= gcc
-CXX ?= g++
+# commands to link to the xml2 library, used in the current neoParSA
+XML_CFLAGS ?= `xml2-config --cflags`
+XML_LIBS   ?= `xml2-config --libs`
 
-MATLAB_DIR ?=/usr/local/matlab-R2013b
-RCPP_DIR   ?=/users/kenneth/RLibs/Rcpp/include
-R_DIR      ?=/usr/include/R
-BOOST_DIR  ?=/users/kenneth/Boost1
+# directories that must be present for all compiled files. We need the Boost
+# libraries, uncompiled, available online, then links to neoParSA
+BOOST_DIR  ?=/users/kenneth/Boost
 PARSA_ROOT ?=/users/kenneth/Annealer/neoParSA-1
-PARSA_DIR = $(PARSA_ROOT)/parsa
 
-LDLIBS += -L$(PARSA_ROOT)/build/lib -lparsa
-LIBPARSA = $(PARSA_ROOT)/build/lib/libparsa.a
+PARSA_DIR  = $(PARSA_ROOT)/parsa
+LDLIBS     += -L$(PARSA_ROOT)/build/lib -lparsa
+LIBPARSA   = $(PARSA_ROOT)/build/lib/libparsa.a
+
+# the user can specify which compiler to use by changing CXX
+CXX ?= g++
 
 ifdef PARALLEL
 	ifeq ($(CXX),icpc)
@@ -25,181 +36,153 @@ endif
 ifdef DEBUG
   FLAGS = -g -Wall -Wstrict-aliasing=0 -O2 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS)
 else
-  ifeq ($(CXX),icpc)
-		FLAGS = -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
-	else
-		FLAGS = -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
-	endif
+	FLAGS = -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
 endif
 
-ifdef MEX
-	CXX += -fPIC
-endif
+SOURCE = src/competition.cpp src/sequence.cpp src/score.cpp src/coeffects.cpp \
+src/cooperativity.cpp src/scalefactor.cpp src/fasta.cpp src/mode.cpp src/pwm.cpp \
+src/TF.cpp src/gene.cpp src/nuclei.cpp src/datatable.cpp src/twobit.cpp \
+src/parameter.cpp src/organism.cpp src/subgroup.cpp \
+src/bindings.cpp src/bindingsite.cpp src/distance.cpp src/promoter.cpp \
+src/quenching.cpp
 
-ifdef R
-  CXX += $(CXX) -O3 -fPIC
-  FLAGS = -m64 -I/usr/include/R -DNDEBUG  -I/usr/local/include -I"/users/kenneth/RLibs/Rcpp/include"
-endif
+OBJECT=$(SOURCE:.cpp=.o)
 
-TRANSC     = competition.o sequence.o score.o coeffects.o cooperativity.o scalefactor.o fasta.o mode.o pwm.o TF.o gene.o nuclei.o datatable.o twobit.o parameter.o organism.o utils.o subgroup.o bindings.o bindingsite.o distance.o promoter.o quenching.o transcpp.o
-PTRANSC    = competition.o sequence.o score.o coeffects.o cooperativity.o scalefactor.o fasta.o mode.o pwm.o TF.o gene.o nuclei.o datatable.o twobit.o parameter.o organism.o utils.o subgroup.o bindings.o bindingsite.o distance.o promoter.o quenching.o ptranscpp.o
-SCRAMBLE   = competition.o sequence.o score.o coeffects.o cooperativity.o scalefactor.o fasta.o mode.o pwm.o TF.o gene.o nuclei.o datatable.o twobit.o parameter.o organism.o utils.o subgroup.o bindings.o bindingsite.o distance.o promoter.o quenching.o scramble.o
-UNFOLD     = competition.o sequence.o score.o coeffects.o cooperativity.o scalefactor.o fasta.o mode.o pwm.o TF.o gene.o nuclei.o datatable.o twobit.o parameter.o organism.o utils.o subgroup.o bindings.o bindingsite.o distance.o promoter.o quenching.o unfold.o
-PARSEFASTA = fasta.o parsefasta.o
-CALCSCORE  = competition.o sequence.o fasta.o gene.o pwm.o TF.o coeffects.o cooperativity.o scalefactor.o parameter.o utils.o twobit.o distance.o
-MATLAB     = competition.o sequence.o score.o coeffects.o cooperativity.o scalefactor.o fasta.o mode.o pwm.o TF.o gene.o nuclei.o datatable.o twobit.o parameter.o organism.o utils.o subgroup.o bindings.o bindingsite.o distance.o promoter.o quenching.o
+HEADER=$(SOURCE:.cpp=.h)
 
-test: $(MATLAB) test.o
-	$(CXX) $(MATLAB) test.o -o tes $(LDLIBS) 
-	
 all: transcpp scramble unfold test_moves
 
-mat: $(MATLAB)
-ifdef MEXOPT_DIR
-	$(MATLAB_DIR)/bin/mex -f $(MEXOPT_DIR) -g matlab/organism_interface_mex.cpp $(MATLAB) -o matlab/organism_interface_mex.mexa64
-else
-	$(MATLAB_DIR)/bin/mex -g matlab/organism_interface_mex.cpp $(MATLAB) -o matlab/organism_interface_mex.mexa64
-endif
+# the basic binaries required to run and probe the transcription model
+transcpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/transcpp.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/transcpp.o $(XML_LIBS) $(PFLAGS) -o transcpp $(LDLIBS) 
+	
+ptranscpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/ptranscpp.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/ptranscpp.o $(XML_LIBS) $(PFLAGS) -I/usr/include/mpich-x86_64 -L/usr/lib64/mpich/lib -lmpichcxx -Wl,-rpath -Wl,/usr/lib64/mpich/lib -lmpich -lopa -lmpl -lrt -lpthread -o ptranscpp $(LDLIBS) 
+	
+scramble: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/scramble.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/scramble.o $(XML_LIBS) $(PFLAGS) -o scramble $(LDLIBS) 
+	
+unfold: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/unfold.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/unfold.o $(XML_LIBS) $(PFLAGS) -o unfold $(LDLIBS) 
 
-rlib: $(MATLAB)
-	rm -rf Rtranscpp/src/*.
-	rm -rf Rtranscpp/src/*.o
-	rm -rf Rtranscpp/src/*.so
-	ar cr Rtranscpp/src/liborganism.a $(MATLAB) 
+test_moves: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/test_moves.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/test_moves.o $(XML_LIBS) $(PFLAGS) -o test_moves $(LDLIBS) 
+
+src/transcpp.o: src/transcpp.cpp
+	$(CXX) -c $(FLAGS) src/transcpp.cpp -o src/transcpp.o
+	
+src/ptranscpp.o: src/ptranscpp.cpp
+	$(CXX) -c $(FLAGS) src/ptranscpp.cpp -DUSE_BOOST -I/usr/include/mpich-x86_64 -L/usr/lib64/mpich/lib -lmpichcxx -Wl,-rpath -Wl,/usr/lib64/mpich/lib -lmpich -lopa -lmpl -lrt -lpthread -o src/ptranscpp.o
+	
+src/scramble.o: src/scramble.cpp
+	$(CXX) -c $(FLAGS) src/scramble.cpp -o src/scramble.o
+	
+src/unfold.o: src/unfold.cpp
+	$(CXX) -c $(FLAGS) src/unfold.cpp -o src/unfold.o
+	
+src/test_moves.o: src/test_moves.cpp
+	$(CXX) -c $(FLAGS) src/test_moves.cpp -o src/test_moves.o
+
+# The default way to compile object files
+$(OBJECT:.o=.$(CXX).o) : $(SOURCE) $(HEADER)
+	$(CXX) -c -fPIC $(FLAGS) $(@:.$(CXX).o=.cpp) -o $@
+	
+# the utils file needs to be compiled separately so that error and print
+# messages can be passed to R or matlab if used
+src/utils.$(CXX).o: src/utils.cpp $(HEADER)
+	$(CXX) -c -fPIC $(FLAGS) src/utils.cpp -o src/utils.$(CXX).o
+	
+
+#################################################################################
+
+# compilation of the R interface
+
+#################################################################################
+
+# if compiling the R interface you must have Rcpp installed. You can chose to
+# use a different compiler than CXX by specifying R_COMPILER. You may also chose
+# a different directory than the default for R_HOME and R_LIBS, otherwise
+# this will use the R command to find them
+
+R_COMPILER ?=$(CXX)
+R_LIB_DIR  ?=$(shell R --slave --vanilla -e "cat(paste(strsplit(Sys.getenv('R_LIBS'),':')[[1]][1],'\n',sep=''))")
+R_HOME_DIR ?=$(shell R --slave --vanilla -e "cat(paste(strsplit(Sys.getenv('R_HOME'),':')[[1]][1],'\n',sep=''))")
+
+R_SOURCE = Rtranscpp/src/r_datatable.cpp Rtranscpp/src/r_defaults.cpp \
+Rtranscpp/src/r_gene.cpp Rtranscpp/src/r_mode.cpp Rtranscpp/src/r_organism.cpp \
+Rtranscpp/src/r_pwm.cpp Rtranscpp/src/r_tf.cpp
+
+R_OBJECT=$(R_SOURCE:.cpp=.o)
+R_HEADER=$(R_SOURCE:.cpp=.h)
+
+$(R_OBJECT) : $(R_SOURCE) $(R_HEADER)
+	$(R_COMPILER) -c -DNDEBUG -fPIC -O3 -I$(R_HOME_DIR)/include -Isrc/ -I$(R_LIB_DIR)/Rcpp/include $(@:.o=.cpp) -o $@
+	
+$(OBJECT:.o=.R.o) : $(SOURCE) $(HEADER)
+	$(CXX) -c -fPIC -O3 -I$(BOOST_DIR) $(@:.R.o=.cpp) -o $@
+	
+src/utils.R.o: src/utils.cpp $(HEADER)
+	$(R_COMPILER) -c -fPIC -O3 -I$(BOOST_DIR) -D R_LIB -I$(R_HOME_DIR)/include -I$(R_LIB_DIR)/Rcpp/include src/utils.cpp -o src/utils.R.o
+	
+Rtranscpp: $(R_OBJECT) $(OBJECT:.o=.R.o) src/utils.R.o
+	ar cr Rtranscpp/src/liborganism.a $(OBJECT:.o=.R.o) src/utils.R.o
+	$(R_COMPILER) -shared -O3 -o Rtranscpp/src/Rtranscpp.so $(R_OBJECT) -LRtranscpp/src -lorganism
 	R CMD INSTALL Rtranscpp
 	
+	
+#################################################################################
 
-transcpp: $(TRANSC) $(LIBPARSA)
-	$(CXX) $(TRANSC) $(XML_LIBS) $(PFLAGS) -o transcpp $(LDLIBS) 
-	rm transcpp.o
-	
-ptranscpp: $(PTRANSC) $(LIBPARSA)
-	$(CXX) $(PTRANSC) $(XML_LIBS) $(PFLAGS) -m64 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m64 -mtune=generic -fPIC -Wl,-z,noexecstack -I/usr/include/mpich-x86_64 -L/usr/lib64/mpich/lib -lmpichcxx -Wl,-rpath -Wl,/usr/lib64/mpich/lib -lmpich -lopa -lmpl -lrt -lpthread -o ptranscpp $(LDLIBS) 
-	rm ptranscpp.o
-	
-test_moves: $(MATLAB) test_moves.o $(LIBPARSA)
-	$(CXX) $(MATLAB) test_moves.o $(XML_LIBS) $(PFLAGS) -o test_moves $(LDLIBS) 
-	rm test_moves.o
+# compilation of the Matlab interface
 
-scramble: $(SCRAMBLE) $(LIBPARSA)
-	$(CXX) $(SCRAMBLE) $(XML_LIBS) $(PFLAGS) -o scramble $(LDLIBS) 
-	rm scramble.o
+#################################################################################
 
-unfold: $(UNFOLD) $(LIBPARSA)
-	$(CXX) $(UNFOLD) $(XML_LIBS) $(PFLAGS) -o unfold $(LDLIBS) 
-	rm unfold.o
+	
+# Matlab is VERY picky about which compiler version it uses. I highly reccomend
+# using the version that was used to compile matlab and using an identical
+# version. Change this by setting the environmental variable MATLAB_COMPILER.
+# Make sure that the matlab bin/ directory is in your PATH. 
 
-getsequence: twobit.o utils.o getsequence.o
-	$(CXX) -O3 twobit.o utils.o getsequence.o -o getseq
-	
-parsefasta: fasta.o parsefasta.o
-	$(CXX) -O3 fasta.o parsefasta.o -o parsefasta
-	
-calcscores: $(CALCSCORE) calc_scores.o
-	$(CXX) -O3 $(CALCSCORE) calc_scores.o -o calcscores
+MATLAB_COMPILER ?=$(CXX)
+TMP_DIR         = $(shell which matlab)
+MATLAB_INCLUDE  = $(TMP_DIR:bin/matlab=extern/include)
 
-test_moves.o: test_moves.cpp
-	$(CXX) -c $(FLAGS) test_moves.cpp
+# compiles separate object file for matlab use
+$(OBJECT:.o=.matlab.o) : $(SOURCE) $(HEADER)
+	$(MATLAB_COMPILER) -c -fPIC -O3 -I$(BOOST_DIR) $(@:.matlab.o=.cpp) -o $@
 	
-competition.o: competition.cpp
-	$(CXX) -c $(FLAGS) competition.cpp
-	
-calc_scores.o: calc_scores.cpp
-	$(CXX) -c $(FLAGS) calc_scores.cpp
-	
-fasta.o: fasta.cpp
-	$(CXX) -c $(FLAGS) fasta.cpp
-	
-scramble.o: scramble.cpp
-	$(CXX) -c $(FLAGS) scramble.cpp
+src/utils.matlab.o: src/utils.cpp $(HEADER)
+	$(R_COMPILER) -c -fPIC -O3 -I$(BOOST_DIR) -I$(MATLAB_INCLUDE) -D MEX src/utils.cpp -o src/utils.matlab.o
 
-sequence.o: sequence.cpp
-	$(CXX) -c $(FLAGS) sequence.cpp
+matlab: $(OBJECT:.o=.matlab.o) src/utils.matlab.o
+	mex -g matlab/organism_interface_mex.cpp $(OBJECT:.o=.matlab.o) src/utils.matlab.o -o matlab/organism_interface_mex.mexa64
 	
-score.o: score.cpp
-	$(CXX) -c $(FLAGS) score.cpp
-	
-cooperativity.o: cooperativity.cpp
-	$(CXX) -c $(FLAGS) cooperativity.cpp
-	
-scalefactor.o: scalefactor.cpp
-	$(CXX) -c $(FLAGS) scalefactor.cpp
-	
-parsefasta.o: parsefasta.cpp
-	$(CXX) -c $(FLAGS) parsefasta.cpp
-	
-pwm.o: pwm.cpp
-	$(CXX) -c $(FLAGS) pwm.cpp
-	
-nuclei.o: nuclei.cpp
-	$(CXX) -c $(FLAGS) nuclei.cpp
+#################################################################################
 
-TF.o: TF.cpp
-	$(CXX) -c $(FLAGS) TF.cpp
-	
-gene.o: gene.cpp
-	$(CXX) -c $(FLAGS) gene.cpp
-	
-datatable.o: datatable.cpp
-	$(CXX) -c $(FLAGS) datatable.cpp
+# Cleanup
 
-ifdef MEX
-utils.o: utils.cpp
-	$(CXX) -c -D MEX -I$(MATLAB_DIR)/extern/include $(FLAGS) utils.cpp
-else 
-ifdef R
-utils.o: utils.cpp
-	$(CXX) -c -D R_LIB -I$(RCPP_DIR) -I$(R_DIR) $(FLAGS) utils.cpp
-else 
-utils.o: utils.cpp
-	$(CXX) -c $(FLAGS) utils.cpp
-endif
-endif
-	
-twobit.o: twobit.cpp
-	$(CXX) -c $(FLAGS) twobit.cpp
-	
-organism.o: organism.cpp
-	$(CXX) -c $(FLAGS) organism.cpp
+#################################################################################
 
-parameter.o: parameter.cpp
-	$(CXX) -c $(FLAGS) parameter.cpp
-	
-transcpp.o: transcpp.cpp
-	$(CXX) -c $(FLAGS) transcpp.cpp
-	
-ptranscpp.o: ptranscpp.cpp
-	$(CXX) -c $(FLAGS) -DUSE_BOOST -m64 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m64 -mtune=generic -fPIC -Wl,-z,noexecstack -I/usr/include/mpich-x86_64 -L/usr/lib64/mpich/lib -lmpichcxx -Wl,-rpath -Wl,/usr/lib64/mpich/lib -lmpich -lopa -lmpl -lrt -lpthread ptranscpp.cpp
-	
-getsequence.o: getsequence.cpp
-	$(CXX) -c $(FLAGS) getsequence.cpp
-	
-subgroup.o: subgroup.cpp
-	$(CXX) -c $(FLAGS) subgroup.cpp
-	
-bindingsite.o: bindingsite.cpp
-	$(CXX) -c $(FLAGS) bindingsite.cpp
-	
-bindings.o: bindings.cpp
-	$(CXX) -c $(FLAGS) bindings.cpp
-	
-quenching.o: quenching.cpp
-	$(CXX) -c $(FLAGS) quenching.cpp
-	
-distance.o: distance.cpp
-	$(CXX) -c $(FLAGS) distance.cpp
-	
-promoter.o: promoter.cpp
-	$(CXX) -c $(FLAGS) promoter.cpp
-	
-mode.o: mode.cpp
-	$(CXX) -c $(FLAGS) mode.cpp
-	
-unfold.o: unfold.cpp
-	$(CXX) -c $(FLAGS) unfold.cpp
-	
-coeffects.o: coeffects.cpp
-	$(CXX) -c $(FLAGS) coeffects.cpp
-	
+# make clean removes everything
 clean:
-	rm -rf *.o 
+	rm -f src/*.o
+	rm -f Rtranscpp/src/*.o
+	rm -f Rtranscpp/src/*.so
+	rm -f Rtranscpp/src/*.a
+	rm -f matlab/*.mex64
+	
+# just cleanup R
+cleanR:
+	rm -f src/*.R.o
+	rm -f Rtranscpp/src/*.o
+	rm -f Rtranscpp/src/*.so
+	rm -f Rtranscpp/src/*.a
+	
+# just cleanup matlab
+cleanmatlab:
+	rm -f src/*.matlab.o
+	rm -f matlab/*.mex64
+	
+
+	
+
+

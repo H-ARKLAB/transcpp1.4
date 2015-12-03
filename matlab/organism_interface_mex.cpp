@@ -1,7 +1,7 @@
 #include "mex.h"
-#include "../pwm.h"
+#include "../src/pwm.h"
 #include "class_handle.hpp"
-#include "../organism.h"
+#include "../src/organism.h"
 
 void create(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {

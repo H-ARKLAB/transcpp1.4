@@ -73,6 +73,14 @@ BOOST_DIR to the location containing the folder "boost". i.e run:
 For convenience, you may chose to put this line in your .bashrc file.
 
 
+libxml2
+-------
+
+If you do not intend to fit model parameters, you may skip this section.
+If you plan to run "transcpp" or "test_moves" then you will need libxml2 
+installed. This will be available on nearly all linux systems.
+
+
 neoParSA
 --------
 

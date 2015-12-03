@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Root>
-  <annealer_input init_T="100000" lambda="0.0001" init_loop="10000"/>
-  <move interval="1000" gain="3"/>
+  <annealer_input init_T="100000" lambda="0.0001" init_loop="100000"/>
+  <move interval="100" gain="3"/>
   <count_criterion freeze_crit="1" freeze_cnt="5"/>
   <mix adaptcoef="10"/>
-  <lam tau="100" memLength_mean=".200" memLength_sd="1000" criterion="100" freeze_cnt="5"/>
+  <lam tau="100" memLength_mean=".200" memLength_sd="100" criterion="1" freeze_cnt="5"/>
   <Mode>
     <!-- 0=lam 1=exp -->
     <Schedule value="0"/>
@@ -13,7 +13,7 @@
     <!-- exit after initial loop for profiling code -->
     <Profiling value="false"/>
     <!-- sse, chisq, pdiff, rms, arkim, sss -->
-    <ScoreFunction value="arkim"/>
+    <ScoreFunction value="sse"/>
     <!-- use p-value threshold for binding instead of score -->
     <PThresh value="0"/>
     <!-- scale data to normalize relative weights in the score. can be type=area or type=height -->
@@ -21,7 +21,7 @@
     <!-- divide score by number of genes -->
     <PerGene value="false"/>
     <!-- the minimum value to use for data, prevents dividing by 0 in score -->
-    <MinData value="15"/>
+    <MinData value="0"/>
     <!-- include promoter competition -->
     <Competition value="false"/>
     <!-- multi-thread program -->
@@ -40,19 +40,19 @@
       <!-- Distance functions are Trapezoid, Uniform, Linear, Sine -->
       <!-- ToDo: currently requires a distance function named quenching! -->
       <Distance name="Cooperativity" distfunc="Trapezoid">
-        <A value="60" lim_low="50" lim_high="150" anneal="true" move="CoopD"/>
+        <A value="60" lim_low="50" lim_high="150" anneal="false" move="CoopD"/>
         <B value="10" lim_low="50" lim_high="150" anneal="false" move="CoopD"/>
       </Distance>
       <Distance name="Quenching" distfunc="Trapezoid">
-        <A value="100" lim_low="50" lim_high="100" anneal="true" move="Quenching"/>
+        <A value="100" lim_low="50" lim_high="100" anneal="false" move="Quenching"/>
         <B value="50" lim_low="50" lim_high="50" anneal="false" move="Quenching"/>
       </Distance>
       <Distance name="BcdCoact" distfunc="Trapezoid">
-        <A value="118.25" lim_low="1" lim_high="200" anneal="true" move="Coeffect"/>
+        <A value="176.18" lim_low="1" lim_high="200" anneal="true" move="Coeffect"/>
         <B value="10" lim_low="50" lim_high="150" anneal="false" move="Coeffect"/>
       </Distance>
       <Distance name="CadCoact" distfunc="Trapezoid">
-        <A value="3.0725" lim_low="1" lim_high="200" anneal="true" move="Coeffect"/>
+        <A value="156.06" lim_low="1" lim_high="200" anneal="true" move="Coeffect"/>
         <B value="10" lim_low="50" lim_high="150" anneal="false" move="Coeffect"/>
       </Distance>
     </Distances>
@@ -60,22 +60,24 @@
       <Promoter name="eve" function="Arrhenius2">
         <Q value="1" lim_low="0" lim_high="30" anneal="false" move="Promoter"/>
         <Rmax value="255" lim_low="255" lim_high="255" anneal="false" move="Promoter"/>
-        <Theta value="9.7465" lim_low="5" lim_high="20" anneal="true" move="Promoter"/>
+        <Theta value="17.901" lim_low="5" lim_high="20" anneal="true" move="Promoter"/>
       </Promoter>
     </Promoters>
     <TFs>
-      <TF name="bcd" bsize="14"  include="true">
-        <kmax value="2.9056" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="1.71" lim_low="1.71" lim_high="2.0" anneal="false" move="Sites"/>
-        <lambda value="2.8882" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+      <TF name="bcd" bsize="14" gc="0.406" include="true">
+        <kmax value="1.9813" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="1.71" lim_high="2.0" anneal="false" move="Sites"/>
+        <lambda value="1.8049" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="13.205" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
+          <coef value="8.1152" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
         </Coefficients>
         <!-- Takes 4 types of inputs: -->
         <!-- PCM = position count matrix (expects an xmlattribute pseudo, which defaults to pseudo=1 -->
         <!-- PFM = position frequency matrix (expects columns to sum to 1. careful of having 0's, which give -inf scores) -->
         <!-- PSSM = position scoring matrix (log-likelihood transformed matrix) -->
-        <PWM type="PCM" pseudo="1" gc="0.406">
+        <!-- BEM = binding energy model (consensus base is 0, others represent ddGs) -->
+        <!-- ToDo: allow user to chose output type, currently defaults to BEM -->
+        <PWM type="PCM" pseudo="1">
           <position>83; 114; 106; 80</position>
           <position>74; 159; 72; 78</position>
           <position>108; 127; 114; 34</position>
@@ -93,11 +95,11 @@
         </PWM>
       </TF>
       <TF name="cad" bsize="14" gc="0.406" include="true">
-        <kmax value="3.0747" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="3.3788" lim_low="1.93" lim_high="3.75" anneal="true" move="Sites"/>
-        <lambda value="3.9895" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <kmax value="1.4275" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="1.93" lim_high="3.75" anneal="false" move="Sites"/>
+        <lambda value="4.5522" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="14.092" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
+          <coef value="10.395" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
         </Coefficients>
         <PWM type="PCM" pseudo="1">
           <position>9; 10; 4; 11</position>
@@ -113,11 +115,11 @@
         </PWM>
       </TF>
       <TF name="dst" bsize="14" gc="0.406" include="true">
-        <kmax value="3.0022" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="3.0212" lim_low="2.3" lim_high="4.3" anneal="true" move="Sites"/>
-        <lambda value="0.98161" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <kmax value="2.0079" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="2.3" lim_high="4.3" anneal="false" move="Sites"/>
+        <lambda value="2.0055" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="3.0176" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
+          <coef value="7.585" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
         </Coefficients>
         <PWM type="PCM" pseudo="1">
           <position>1; 0; 0; 29</position>
@@ -135,11 +137,11 @@
         </PWM>
       </TF>
       <TF name="dic" bsize="14" gc="0.406" include="true">
-        <kmax value="3.9771" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="3.2112" lim_low="1.43" lim_high="5.0" anneal="true" move="Sites"/>
-        <lambda value="4.6765" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <kmax value="2.1013" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="1.43" lim_high="5.0" anneal="false" move="Sites"/>
+        <lambda value="1.7418" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="4.0669" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
+          <coef value="6.2319" lim_low="0.0001" lim_high="20.000000" anneal="true" move="Promoter"/>
         </Coefficients>
         <PWM type="PCM" pseudo="1">
           <position>1; 8; 7; 13</position>
@@ -157,12 +159,12 @@
         </PWM>
       </TF>
       <TF name="hb" bsize="14" gc="0.406" include="true">
-        <kmax value="2.2892" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="0.63" lim_low="0.07" lim_high="1.6" anneal="false" move="Sites"/>
-        <lambda value="4.4511" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <kmax value="3.1955" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="0.07" lim_high="1.6" anneal="false" move="Sites"/>
+        <lambda value="0.92287" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="-0.69358" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
-          <coef value="27.057" lim_low="0.0001" lim_high="30.000000" anneal="true" move="Promoter"/>
+          <coef value="-0.92602" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+          <coef value="14.712" lim_low="0.0001" lim_high="30.000000" anneal="true" move="Promoter"/>
         </Coefficients>
         <PWM type="PCM" pseudo="1">
           <position>53; 6; 224; 7</position>
@@ -178,11 +180,11 @@
         </PWM>
       </TF>
       <TF name="Kr" bsize="14" gc="0.406" include="true">
-        <kmax value="0.85969" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="1.5651" lim_low="0.0" lim_high="3.0" anneal="true" move="Sites"/>
-        <lambda value="0.84763" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <kmax value="2.9911" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="0.0" lim_high="3.0" anneal="false" move="Sites"/>
+        <lambda value="4.6557" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="-0.025308" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+          <coef value="-0.12286" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
         </Coefficients>
         <PWM type="PCM" pseudo="1">
           <position>17; 73; 6; 101</position>
@@ -198,11 +200,11 @@
         </PWM>
       </TF>
       <TF name="kni" bsize="14" gc="0.406" include="true">
-        <kmax value="0.20875" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="2.5318" lim_low="2.2" lim_high="5.1" anneal="true" move="Sites"/>
-        <lambda value="2.336" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <kmax value="2.3951" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="2.2" lim_high="5.1" anneal="false" move="Sites"/>
+        <lambda value="2.6307" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="-0.39308" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+          <coef value="-0.012111" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
         </Coefficients>
         <PWM type="PCM" pseudo="1">
           <position>19; 1; 2; 4</position>
@@ -220,11 +222,11 @@
         </PWM>
       </TF>
       <TF name="gt" bsize="24" gc="0.406" include="true">
-        <kmax value="1.6012" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="0.87178" lim_low="0.5" lim_high="2.0" anneal="true" move="Sites"/>
-        <lambda value="4.8711" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <kmax value="0.61696" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="0.5" lim_high="2.0" anneal="false" move="Sites"/>
+        <lambda value="1.939" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="-0.8136" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+          <coef value="-0.50304" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
         </Coefficients>
         <PWM type="PCM" pseudo="1">
           <position>86; 62; 19; 942</position>
@@ -238,14 +240,14 @@
           <position>15; 378; 85; 631</position>
         </PWM>
       </TF>
-      <TF name="tll" bsize="14" include="true">
-        <kmax value="2.3625" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
-        <threshold value="3.2706" lim_low="1.8" lim_high="4.0" anneal="true" move="Sites"/>
-        <lambda value="1.3824" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+      <TF name="tll" bsize="14" gc="0.406" include="true">
+        <kmax value="0.93478" lim_low="0.000001" lim_high="4.000000" anneal="true" move="Kmax"/>
+        <threshold value="0" lim_low="1.8" lim_high="4.0" anneal="false" move="Sites"/>
+        <lambda value="3.7836" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
-          <coef value="-0.18648" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+          <coef value="-0.8961" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
         </Coefficients>
-        <PWM type="PCM" pseudo="1" gc="0.406">
+        <PWM type="PCM" pseudo="1">
           <position>12; 8; 0; 0</position>
           <position>1; 2; 2; 15</position>
           <position>1; 2; 1; 16</position>
@@ -257,89 +259,48 @@
           <position>0; 3; 2; 15</position>
         </PWM>
       </TF>
-      <TF name="slp" bsize="14" include="false">
-        <kmax      value="0"   lim_low="0.00001" lim_high="5" anneal="true" move="Kmax"/>
-        <threshold value="0"   lim_low="0" lim_high="4" anneal="false" move="Sites"/>
-        <lambda    value="2.0" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
-        <Coefficients>
-          <coef value="-1" lim_low="-1" lim_high="0" anneal="true" move="QuenchingCoef"/>
-        </Coefficients>
-        <PWM type="PCM" pseudo="1" gc="0.406">
-          <position>8; 3; 14; 16</position>
-          <position>0; 0; 0; 41</position>
-          <position>3; 0; 38; 0</position>
-          <position>0; 0; 0; 41</position>
-          <position>0; 0; 1; 40</position>
-          <position>0; 0; 2; 39</position>
-          <position>27; 0; 4; 10</position>
-          <position>1; 22; 7; 11</position>
-          <position>17; 8; 15; 1</position>
-          <position>4; 13; 3; 21</position>
-          <position>15; 3; 4; 19</position>
-        </PWM>
-      </TF>
-      <TF name="zld" bsize="14" include="false">
-        <kmax           value="3.865428099056663" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
-        <threshold      value="0" lim_low="1.8" lim_high="4" anneal="false" move="Sites"/>
-        <lambda         value="1.37023842095809" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
-        <Coefficients>
-          <coef value="1" lim_low="0" lim_high="1" anneal="true" move="Promoter"/>
-        </Coefficients>
-        <PWM type="PCM" pseudo="1"gc="0.406">
-          <base   >                       A                       C                       G                       T</base   >
-          <position>  28; 629;  61; 282</position>
-          <position>   2;   0;  24; 974</position>
-          <position> 874;   0; 126;   0</position>
-          <position>   0; 996;   2;   2</position>
-          <position>   0; 999;   0;   1</position>
-          <position>   2;   0;   0; 998</position>
-          <position>  48;   7; 994;   1</position>
-          <position> 157; 456;  14; 247</position>
-          <position>  28; 629;  61; 282</position>
-        </PWM>
-      </TF>
     </TFs>
     <Interactions>
       <Cooperativity factor1="bcd" factor2="bcd" distance="Cooperativity" include="true">
         <Orientation HH="true" HT="true" TT="true"/>
-        <Kcoop value="451.78" lim_low="0" lim_high="499" anneal="true" move="Kcoop"/>
+        <Kcoop value="341.21" lim_low="0" lim_high="499" anneal="true" move="Kcoop"/>
       </Cooperativity>
       <!-- directional coactivation not implemented yet -->
       <Coeffect actor="bcd" target="hb" distance="BcdCoact" coef_idx="2" include="true">
-        <efficiency value="0.63385" lim_low="0" lim_high="1" anneal="true" move="CoeffectEff"/>
+        <efficiency value="0.30122" lim_low="0" lim_high="1" anneal="true" move="CoeffectEff"/>
         <Orientation HH="true" HT="true" TT="true"/>
       </Coeffect>
       <Coeffect actor="cad" target="hb" distance="CadCoact" coef_idx="2" include="true">
-        <efficiency value="0.45623" lim_low="0" lim_high="1" anneal="true" move="CoeffectEff"/>
+        <efficiency value="0.3178" lim_low="0" lim_high="1" anneal="true" move="CoeffectEff"/>
         <Orientation HH="true" HT="true" TT="true"/>
       </Coeffect>
     </Interactions>
     <Genes>
-      <Source name="m06" file="/users/kenneth/Sandbox/transcpp/sequences/m06.fa" type="fasta">
-        <Gene name="M3_2_lox" header="M3_2_lox" left_bound="-1719" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false"/>
-        <Gene name="M32_lox" header="M32_lox" left_bound="-1375" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false"/>
-        <Gene name="M23_lox" header="M23_lox" left_bound="-1374" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false"/>
-        <Gene name="M2_3_lox" header="M2_3_lox" left_bound="-1531" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false"/>
-        <Gene name="p1700" header="1700" left_bound="-1728" right_bound="-1" TSS="-1" promoter="eve" scale="B" anneal="false"/>
-        <Gene name="MSE2" header="MSE2" left_bound="-541" right_bound="-1" TSS="-1" promoter="eve" scale="C" anneal="false"/>
-        <Gene name="MSE3" header="MSE3" left_bound="-541" right_bound="-1" TSS="-1" promoter="eve" scale="D" anneal="false"/>
+      <Source name="m06" type="local">
+        <Gene name="M3_2_lox" header="M3_2_lox" left_bound="-1719" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGAGCTCGTTCCTTCGGGTCCAAAATTATGCCAGTTTGTTTTGTCTCTGGCAATTATTGGAAATTTCATTGGGTCGATTTCGCTGCCTTCCTTGCTCTTCCCTTGAGAAAAGTGAATAGGTTGTGCCATAAAAATCGCTGCTCCTGAAGACCAAATGAAATGGATTTGTGTAAGCATTAAAAACGCGAGGCAAGCCCCAAGATTCCTCCACTGCTTTTTTTATATTGCCCACTGCTAAATGCAGCTAATTCGTCGATTGTTTAAAAATTAAATTACTTATGTTGCCATTCATACATCCCCTCACATTTTATGGCCATTTGAGTGCGGGGTGCACAGTTCTGTCTTAAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="M32_lox"  header="M32_lox"  left_bound="-1375" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="M23_lox"  header="M23_lox"  left_bound="-1374" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="M2_3_lox" header="M2_3_lox" left_bound="-1531" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGCAGGTCCAGGCAACGCAATTAACGGACTAGCGAACTGGGTTATTTTTTTGCGCCGACTTAGCCCTGATCCGCGAGCTTAACCCGTTTTGAGCCGGGCAGCAGGTAGTTGTGGGTGGACCCCACGATTTTTTTGGCCAAACCTCCAAGCTAACTTGCAATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="p1700"    header="p1700"    left_bound="-1728" right_bound="-1" TSS="-1" promoter="eve" scale="B" anneal="false" sequence="GGAATTGAACCTTTCCCGGGGCAAGAAGGCTTGCATGTGGGCCTTTTCCAGGTCGGCCAGTAGGTAGAGTTGTTGCGATGCGGCTATGCCGGGCGAGTTAATGCCAATGCAAATTGCGGGCGCAATATAACCCAATAATTTGAAGTAACTGGCAGGAGCGAGGTATCCTTCCTGGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGCAGGTCCAGGCAACGCAATTAACGGACTAGCGAACTGGGTTATTTTTTTGCGCCGACTTAGCCCTGATCCGCGAGCTTAACCCGTTTTGAGCCGGGCAGCAGGTAGTTGTGGGTGGACCCCACGATTTTTTTGGCCAAACCTCCAAGCTAACTTGCGCAAGTGGCAAGTGGCCGGTTTGCTGGCCCAAAAGAGGAGGCACTATCCCGGTCCTGGTACAGTTGGTACGCTGGGAATGATTATATCATCATAATAAATGTTTTGCCCAACGAAACCGAAAACTTTTCAAATTAAGTCCCGGCAACTGGGTTCCCATTTTCCATTTTCCATGTTCTGCGGGCAGGGGCGGCCATTATCTCGCTACAGCAGTTCCCAAATGGTTATGGCTGGACACCCCTGCCGCCGCTCCAACGGGGTGGATGAAGCCCCCAAAACCCGAAAGTCATGGCAGCCATGGCAGTGTGGGGCTGTTAAACGTGCGGCATAATATTAAGACTTCATAAAAGCGCAAATAATTCGCTGGCAGGCGATCGATAATACATACATACAAATATATAGTGGGATACACACACTCTCTGCCGGCAAACACACACCACCCGACCCGACTGAGCGGCATAATGCCATATCATTCTTGATGAAGCCGATAAAATCCCATTATTAAGGGGGCCCGCCCGTCCCGCTCGCTCCTGCGGAGCAACCGCCTGCGGGCGGGCGAGACAAAAGATTCGCTCATCCGCTATGAATACCAAATCGGAACTCTCTCTCTCTCCAGCTCGGGAGTGCCATGGCCAGCATGGCCAGGACCTCCTCATGGTCCTGCCGAGCAGAGAACGCGGCTCCATCCCGCTGCTCCGGGTCCTGCTCCTCCGCTTTGTCCCGCCTCGTTATCGCCGCTCAGCACCGAGAGCACAGCAGCGCATCCACTCTCAGCACCGCACGATTAGCACCGTTCCGCTCAGGCTGTCCCGCTCGCACCTGCCTGGGTCGCTGCGATTGGCCGCTCCCAGCGACGGCGGCCATTTGCCTGCAGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="MSE2"     header="MSE2"     left_bound="-541"  right_bound="-1" TSS="-1" promoter="eve" scale="C" anneal="false" sequence="GAATTCGAGCTCGCCCGGGCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="MSE3"     header="MSE3"     left_bound="-541"  right_bound="-1" TSS="-1" promoter="eve" scale="D" anneal="false" sequence="CTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
       </Source>
     </Genes>
     <ScaleFactors>
       <ScaleFactor name="A">
-        <A value="1" lim_low="0.2" lim_high="5" anneal="false" move="Null"/>
+        <A value="2.3816" lim_low="0.2" lim_high="5" anneal="true" move="Null"/>
         <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
       </ScaleFactor>
       <ScaleFactor name="B">
-        <A value="0.44126" lim_low="0.2" lim_high="1.5" anneal="true" move="Null"/>
+        <A value="1.4735" lim_low="0.2" lim_high="1.5" anneal="true" move="Null"/>
         <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
       </ScaleFactor>
       <ScaleFactor name="D">
-        <A value="6.9201" lim_low="0.8" lim_high="11" anneal="true" move="Null"/>
+        <A value="2.0498" lim_low="0.8" lim_high="11" anneal="true" move="Null"/>
         <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
       </ScaleFactor>
       <ScaleFactor name="C">
-        <A value="2.0061" lim_low="0.2" lim_high="5" anneal="true" move="Null"/>
+        <A value="4.8614" lim_low="0.2" lim_high="5" anneal="true" move="Null"/>
         <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
       </ScaleFactor>
       <ScaleFactor name="default">
@@ -481,4 +442,407 @@
       <TableRow ID="8284" cad=" 66.34" eve="  1.17" ftz=" 8.411" gt=" 0.321" h=" 1.795" hb=" 31.44" kni="     0" Kr="     0" odd=" 1.745" prd=" 1.516" run=" 11.78" slp=" 13.59" tll=" 143.1" bcd="  2.02" dst=" 40.98" dic="  6.99" zld="   100" gaga="   100" cic="    61" ken=" 68.13" otd=" 13.72"/>
     </TFData>
   </Input>
+  <Output>
+    <Distances>
+      <Distance name="BcdCoact" distfunc="Trapezoid">
+        <A value="147.56" lim_low="1" lim_high="200" anneal="true" move="Coeffect"/>
+        <B value="10" lim_low="50" lim_high="150" anneal="false" move="Coeffect"/>
+      </Distance>
+      <Distance name="CadCoact" distfunc="Trapezoid">
+        <A value="39.03" lim_low="1" lim_high="200" anneal="true" move="Coeffect"/>
+        <B value="10" lim_low="50" lim_high="150" anneal="false" move="Coeffect"/>
+      </Distance>
+      <Distance name="Cooperativity" distfunc="Trapezoid">
+        <A value="60" lim_low="50" lim_high="150" anneal="false" move="CoopD"/>
+        <B value="10" lim_low="50" lim_high="150" anneal="false" move="CoopD"/>
+      </Distance>
+      <Distance name="Quenching" distfunc="Trapezoid">
+        <A value="100" lim_low="50" lim_high="100" anneal="false" move="Quenching"/>
+        <B value="50" lim_low="50" lim_high="50" anneal="false" move="Quenching"/>
+      </Distance>
+    </Distances>
+    <Promoters>
+      <Promoter name="eve" function="Arrhenius2">
+        <Q     value="1" lim_low="0" lim_high="30" anneal="false" move="Promoter"/>
+        <Rmax  value="255" lim_low="255" lim_high="255" anneal="false" move="Promoter"/>
+        <Theta value="6.5874" lim_low="5" lim_high="20" anneal="true" move="Promoter"/>
+      </Promoter>
+    </Promoters>
+    <TFs>
+      <TF name="bcd" bsize="14" gc="0.406" include="true">
+        <kmax           value="2.3844" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="1.71" lim_high="2" anneal="false" move="Sites"/>
+        <lambda         value="1.0554" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="0.0009642" lim_low="0.0001" lim_high="20" anneal="true" move="Promoter"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>          83;         114;         106;          80</position>
+          <position>          74;         159;          72;          78</position>
+          <position>         108;         127;         114;          34</position>
+          <position>          48;         149;          11;         175</position>
+          <position>           6;           1;           0;         376</position>
+          <position>         381;           0;           2;           0</position>
+          <position>         379;           0;           4;           0</position>
+          <position>           5;           0;           4;         374</position>
+          <position>           0;         383;           0;           0</position>
+          <position>           6;         340;           3;          34</position>
+          <position>          72;         136;         132;          43</position>
+          <position>          61;         174;          60;          88</position>
+          <position>          65;         166;          52;         100</position>
+          <position>          68;         158;          49;         108</position>
+        </PWM>
+      </TF>
+      <TF name="cad" bsize="14" gc="0.406" include="true">
+        <kmax           value="0.010915" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="1.93" lim_high="3.75" anneal="false" move="Sites"/>
+        <lambda         value="3.818" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="0.010765" lim_low="0.0001" lim_high="20" anneal="true" move="Promoter"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>           9;          10;           4;          11</position>
+          <position>          12;           6;           4;          16</position>
+          <position>           3;           3;           3;          29</position>
+          <position>           4;           0;           0;          34</position>
+          <position>          12;           0;           2;          24</position>
+          <position>          38;           0;           0;           0</position>
+          <position>           0;           0;           0;          38</position>
+          <position>           4;           0;           7;          27</position>
+          <position>          22;           0;          15;           1</position>
+          <position>           1;           8;          10;           1</position>
+        </PWM>
+      </TF>
+      <TF name="dst" bsize="14" gc="0.406" include="true">
+        <kmax           value="3.99" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="2.3" lim_high="4.3" anneal="false" move="Sites"/>
+        <lambda         value="3.1094" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="0.00088493" lim_low="0.0001" lim_high="20" anneal="true" move="Promoter"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>           1;           0;           0;          29</position>
+          <position>           1;           0;           1;          28</position>
+          <position>           2;           1;           0;          27</position>
+          <position>           1;          27;           1;           1</position>
+          <position>           1;          20;           6;           3</position>
+          <position>           5;          16;           8;           1</position>
+          <position>           3;           3;          22;           2</position>
+          <position>           0;           2;          27;           1</position>
+          <position>          24;           3;           1;           2</position>
+          <position>          28;           0;           1;           1</position>
+          <position>          27;           1;           0;           2</position>
+          <position>           5;           8;           6;          11</position>
+        </PWM>
+      </TF>
+      <TF name="dic" bsize="14" gc="0.406" include="true">
+        <kmax           value="0.41722" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="1.43" lim_high="5" anneal="false" move="Sites"/>
+        <lambda         value="4.9245" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="0.2202" lim_low="0.0001" lim_high="20" anneal="true" move="Promoter"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>           1;           8;           7;          13</position>
+          <position>           0;          25;           0;           4</position>
+          <position>           0;          17;           0;           1</position>
+          <position>          20;           0;           0;           9</position>
+          <position>           0;           0;           0;          29</position>
+          <position>           0;           0;           3;          26</position>
+          <position>           2;           0;          27;           0</position>
+          <position>           0;           0;           0;          29</position>
+          <position>           1;           2;           4;          22</position>
+          <position>           4;          10;           6;           9</position>
+          <position>           6;           1;           1;          21</position>
+          <position>           1;           8;           7;          13</position>
+        </PWM>
+      </TF>
+      <TF name="hb" bsize="14" gc="0.406" include="true">
+        <kmax           value="3.9946" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="0.07" lim_high="1.6" anneal="false" move="Sites"/>
+        <lambda         value="1.6771" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="-0.99983" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+          <coef value="29.561" lim_low="0.0001" lim_high="30" anneal="true" move="Promoter"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>          53;           6;         224;           7</position>
+          <position>           2;           6;           3;         279</position>
+          <position>           0;           2;           0;         288</position>
+          <position>           2;           0;           0;         288</position>
+          <position>           0;           2;           0;         288</position>
+          <position>           0;           3;           0;         287</position>
+          <position>           0;           2;           0;         288</position>
+          <position>         281;           0;           3;           6</position>
+          <position>          31;          43;          78;         138</position>
+          <position>          20;         100;         109;          61</position>
+        </PWM>
+      </TF>
+      <TF name="Kr" bsize="14" gc="0.406" include="true">
+        <kmax           value="0.039826" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="0" lim_high="3" anneal="false" move="Sites"/>
+        <lambda         value="4.9982" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="-0.99934" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>          17;          73;           6;         101</position>
+          <position>         187;           5;           0;           5</position>
+          <position>         158;          39;           0;           0</position>
+          <position>           0;         194;           1;           2</position>
+          <position>           1;         194;           0;           2</position>
+          <position>           0;         197;           0;           0</position>
+          <position>           8;          22;           6;         161</position>
+          <position>           0;           2;           0;         195</position>
+          <position>           2;          34;           2;         159</position>
+          <position>          44;         109;          15;          29</position>
+        </PWM>
+      </TF>
+      <TF name="kni" bsize="14" gc="0.406" include="true">
+        <kmax           value="0.97327" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="2.2" lim_high="5.1" anneal="false" move="Sites"/>
+        <lambda         value="4.9685" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="-0.093497" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>          19;           1;           2;           4</position>
+          <position>          25;           1;           0;           0</position>
+          <position>          16;           0;           0;          10</position>
+          <position>           5;           9;           6;           6</position>
+          <position>           0;           4;           1;          21</position>
+          <position>          21;           0;           5;           0</position>
+          <position>           0;           0;          26;           0</position>
+          <position>          17;           0;           8;           1</position>
+          <position>           1;           3;          18;           4</position>
+          <position>           0;          26;           0;           0</position>
+          <position>          25;           0;           1;           0</position>
+          <position>           5;          12;           7;           2</position>
+        </PWM>
+      </TF>
+      <TF name="gt" bsize="24" gc="0.406" include="true">
+        <kmax           value="0.5741" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="0.5" lim_high="2" anneal="false" move="Sites"/>
+        <lambda         value="3.3279" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="-0.5641" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>          86;          62;          19;         942</position>
+          <position>          12;         108;         359;         630</position>
+          <position>         776;          25;         275;          33</position>
+          <position>           8;         762;          65;         274</position>
+          <position>          83;          19;         996;          11</position>
+          <position>           0;         556;           0;         553</position>
+          <position>        1020;          88;           1;           0</position>
+          <position>        1106;           0;           0;           3</position>
+          <position>          15;         378;          85;         631</position>
+        </PWM>
+      </TF>
+      <TF name="tll" bsize="14" gc="0.406" include="true">
+        <kmax           value="3.9505" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
+        <threshold      value="0" lim_low="1.8" lim_high="4" anneal="false" move="Sites"/>
+        <lambda         value="0.92704" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <Coefficients>
+          <coef value="-0.99839" lim_low="-1" lim_high="-0.0001" anneal="true" move="QuenchingCoef"/>
+        </Coefficients>
+        <PWM type="PCM" pseudo="1">
+          <base   >            A            C            G            T</base   >
+          <position>          12;           8;           0;           0</position>
+          <position>           1;           2;           2;          15</position>
+          <position>           1;           2;           1;          16</position>
+          <position>           5;           1;           0;          14</position>
+          <position>           2;           3;          15;           0</position>
+          <position>          11;           1;           5;           3</position>
+          <position>           1;          17;           0;           2</position>
+          <position>           0;           2;           1;          17</position>
+          <position>           0;           3;           2;          15</position>
+        </PWM>
+      </TF>
+    </TFs>
+    <Interactions>
+      <Cooperativity factor1="bcd" factor2="bcd" distance="Cooperativity">
+        <Orientation HH="true" HT="true" TT="true"/>
+        <Kcoop value="251.76" lim_low="0" lim_high="499" anneal="true" move="Kcoop"/>
+      </Cooperativity>
+      <Coeffect actor="bcd" target="hb" distance="BcdCoact" coef_idx="2" include="true">
+        <efficiency value="0.31801" lim_low="0" lim_high="1" anneal="true" move="CoeffectEff"/>
+        <Orientation HH="true" HT="true" TT="true"/>
+      </Coeffect>
+      <Coeffect actor="cad" target="hb" distance="CadCoact" coef_idx="2" include="true">
+        <efficiency value="0.86963" lim_low="0" lim_high="1" anneal="true" move="CoeffectEff"/>
+        <Orientation HH="true" HT="true" TT="true"/>
+      </Coeffect>
+    </Interactions>
+    <Genes>
+      <Source name="m06" type="local">
+        <Gene name="M3_2_lox" header="M3_2_lox" left_bound="-1719" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGAGCTCGTTCCTTCGGGTCCAAAATTATGCCAGTTTGTTTTGTCTCTGGCAATTATTGGAAATTTCATTGGGTCGATTTCGCTGCCTTCCTTGCTCTTCCCTTGAGAAAAGTGAATAGGTTGTGCCATAAAAATCGCTGCTCCTGAAGACCAAATGAAATGGATTTGTGTAAGCATTAAAAACGCGAGGCAAGCCCCAAGATTCCTCCACTGCTTTTTTTATATTGCCCACTGCTAAATGCAGCTAATTCGTCGATTGTTTAAAAATTAAATTACTTATGTTGCCATTCATACATCCCCTCACATTTTATGGCCATTTGAGTGCGGGGTGCACAGTTCTGTCTTAAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="M32_lox"  header="M32_lox"  left_bound="-1375" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="M23_lox"  header="M23_lox"  left_bound="-1374" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="M2_3_lox" header="M2_3_lox" left_bound="-1531" right_bound="-1" TSS="-1" promoter="eve" scale="A" anneal="false" sequence="ACATAAGGTGGTCCCGTCGGCAAGAGACATCCACTTAACGTATGCTTGCAATAAGTGCGAGTGAAAGGAATAGTATTCTGAGTGTCGTATTGAGTCTGAGTGAGACAGCGATATGATTGTTGATTAACCCTTAGCATGTCCGTGGGGTTTGAATTAACTCATAATATTAATTAGACGAAATTATTTTTAAAGTTTTATTTTTAATAATTTGCGAGTACGCAAAGCTTGGCGTACCATAACTTCGTATAGGATACTTTATACGAAGTTATCTCGAGGTCGACGGTATCGATAAGCTTGATATCGAATTCGAGCTCGCCCGGGGATCGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGCAGGTCCAGGCAACGCAATTAACGGACTAGCGAACTGGGTTATTTTTTTGCGCCGACTTAGCCCTGATCCGCGAGCTTAACCCGTTTTGAGCCGGGCAGCAGGTAGTTGTGGGTGGACCCCACGATTTTTTTGGCCAAACCTCCAAGCTAACTTGCAATTCGAGCTCGCCCGGGGATCCTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="p1700"    header="p1700"    left_bound="-1728" right_bound="-1" TSS="-1" promoter="eve" scale="B" anneal="false" sequence="GGAATTGAACCTTTCCCGGGGCAAGAAGGCTTGCATGTGGGCCTTTTCCAGGTCGGCCAGTAGGTAGAGTTGTTGCGATGCGGCTATGCCGGGCGAGTTAATGCCAATGCAAATTGCGGGCGCAATATAACCCAATAATTTGAAGTAACTGGCAGGAGCGAGGTATCCTTCCTGGTTACCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGCAGGTCCAGGCAACGCAATTAACGGACTAGCGAACTGGGTTATTTTTTTGCGCCGACTTAGCCCTGATCCGCGAGCTTAACCCGTTTTGAGCCGGGCAGCAGGTAGTTGTGGGTGGACCCCACGATTTTTTTGGCCAAACCTCCAAGCTAACTTGCGCAAGTGGCAAGTGGCCGGTTTGCTGGCCCAAAAGAGGAGGCACTATCCCGGTCCTGGTACAGTTGGTACGCTGGGAATGATTATATCATCATAATAAATGTTTTGCCCAACGAAACCGAAAACTTTTCAAATTAAGTCCCGGCAACTGGGTTCCCATTTTCCATTTTCCATGTTCTGCGGGCAGGGGCGGCCATTATCTCGCTACAGCAGTTCCCAAATGGTTATGGCTGGACACCCCTGCCGCCGCTCCAACGGGGTGGATGAAGCCCCCAAAACCCGAAAGTCATGGCAGCCATGGCAGTGTGGGGCTGTTAAACGTGCGGCATAATATTAAGACTTCATAAAAGCGCAAATAATTCGCTGGCAGGCGATCGATAATACATACATACAAATATATAGTGGGATACACACACTCTCTGCCGGCAAACACACACCACCCGACCCGACTGAGCGGCATAATGCCATATCATTCTTGATGAAGCCGATAAAATCCCATTATTAAGGGGGCCCGCCCGTCCCGCTCGCTCCTGCGGAGCAACCGCCTGCGGGCGGGCGAGACAAAAGATTCGCTCATCCGCTATGAATACCAAATCGGAACTCTCTCTCTCTCCAGCTCGGGAGTGCCATGGCCAGCATGGCCAGGACCTCCTCATGGTCCTGCCGAGCAGAGAACGCGGCTCCATCCCGCTGCTCCGGGTCCTGCTCCTCCGCTTTGTCCCGCCTCGTTATCGCCGCTCAGCACCGAGAGCACAGCAGCGCATCCACTCTCAGCACCGCACGATTAGCACCGTTCCGCTCAGGCTGTCCCGCTCGCACCTGCCTGGGTCGCTGCGATTGGCCGCTCCCAGCGACGGCGGCCATTTGCCTGCAGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="MSE2"     header="MSE2"     left_bound="-541"  right_bound="-1" TSS="-1" promoter="eve" scale="C" anneal="false" sequence="GAATTCGAGCTCGCCCGGGCCGGTACTGCATAACAATGGAACCCGAACCGTAACTGGGACAGATCGAAAAGCTGGCCTGGTTTCTCGCTGTGTGTGCCGTGTTAATCCGTTTGCCATCAGCGAGATTATTAGTCAATTGCAGTTGCAGCGTTTCGCTTTCGTCCTCGTTTCACTTTCGAGTTAGACTTTATTGCAGCATCTTGAACAATCGTCGCAGTTTGGTAACACGCTGTGCCATACTTTCATTTAGACGGAATCGAGGGACCCTGGACTATAATCGCACAACGAGACCGGGTTGCGAAGTCAGGGCATTCCGCCGATCTAGCCATCGCCATCTTCTGCGGGCGTTTGTTTGTTTGTTTGCTGGGATTAGCCAAGGGCTTGACTTGGAATCCAATCCCGATCCCTAGCCCGATCCCAATCCCAATCCCAATCCCTTGTCCTTTTCATTAGAAAGTCATAAAAACACATAATAATGATGTCGAAGGGATTAGGGGCGCGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+        <Gene name="MSE3"     header="MSE3"     left_bound="-541"  right_bound="-1" TSS="-1" promoter="eve" scale="D" anneal="false" sequence="CTCGAAATCGAGAGCGACCTCGCTGCATTAGAAAACTAGATCAGTTTTTTGTTTTGGCCGACCGATTTTTGTGCCCGGTGCTCTCTTTACGGTTTATGGCCGCGTTCCCATTTCCCAGCTTCTTTGTTCCGGGCTCAGAAATCTGTATGGAATTATGGTATATGCAGATTTTTATGGGTCCCGGCGATCCGGTTCGCGGAACGGGAGTGTCCTGCCGCGAGAGGTCCTCGCCGGCGATCCTTGTCGCCCGTATTAGGAAAGTAGATCACGTTTTTTGTTCCCATTGTGCGCTTTTTTCGCTGCGCTAGTTTTTTTCCCCGAACCCAGCGAACTGCTCTAATTTTTTAATTCTTCACGGCTTTTCATTGGGCTCCTGGAAAAACGCGGACAAGGTTATAACGCTCTACTTACCTGCAATTGTGGCCATAACTCGCACTGCTCTCGTTTTTAAGATCCGTTTGTTTGTGTTTGTTTGTCCGCGATGGCATTCACGTTTTTACGGAGCGCAGCGGTATAAAAGGGCGCGGGGTGGCTGAGAGC"/>
+      </Source>
+    </Genes>
+    <ScaleFactors>
+      <ScaleFactor name="A">
+        <A value="1.674" lim_low="0.2" lim_high="5" anneal="true" move="Null"/>
+        <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
+      </ScaleFactor>
+      <ScaleFactor name="B">
+        <A value="0.20535" lim_low="0.2" lim_high="1.5" anneal="true" move="Null"/>
+        <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
+      </ScaleFactor>
+      <ScaleFactor name="C">
+        <A value="0.26045" lim_low="0.2" lim_high="5" anneal="true" move="Null"/>
+        <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
+      </ScaleFactor>
+      <ScaleFactor name="D">
+        <A value="0.80087" lim_low="0.8" lim_high="11" anneal="true" move="Null"/>
+        <B value="0" lim_low="0" lim_high="10" anneal="false" move="Null"/>
+      </ScaleFactor>
+      <ScaleFactor name="default">
+        <A value="1" lim_low="1" lim_high="1" anneal="false" move=""/>
+        <B value="0" lim_low="0" lim_high="0" anneal="false" move=""/>
+      </ScaleFactor>
+    </ScaleFactors>
+    <RateData row="ID" col="gene">
+      <TableRow ID="8227" M3_2_lox="  0.7400" M32_lox="  3.4300" M23_lox="  0.0500" M2_3_lox="  1.5900" p1700="  5.0600" MSE2=" 29.4400" MSE3="  0.0000"/>
+      <TableRow ID="8228" M3_2_lox="  1.6800" M32_lox="  4.5100" M23_lox="  0.0200" M2_3_lox="  1.4500" p1700="  8.7900" MSE2=" 32.8200" MSE3="  0.0000"/>
+      <TableRow ID="8229" M3_2_lox="  3.3600" M32_lox="  8.9300" M23_lox="  0.1000" M2_3_lox="  2.4900" p1700=" 16.0300" MSE2=" 43.4900" MSE3="  0.0000"/>
+      <TableRow ID="8230" M3_2_lox=" 10.2900" M32_lox=" 21.1200" M23_lox="  0.7900" M2_3_lox="  4.0800" p1700=" 56.2900" MSE2=" 55.9200" MSE3="  0.0000"/>
+      <TableRow ID="8231" M3_2_lox=" 20.4000" M32_lox=" 49.6400" M23_lox="  2.4700" M2_3_lox="  6.4000" p1700="117.8000" MSE2=" 77.2500" MSE3="  0.0000"/>
+      <TableRow ID="8232" M3_2_lox=" 27.0100" M32_lox=" 80.1800" M23_lox="  4.5500" M2_3_lox=" 11.4500" p1700="129.8000" MSE2="104.0000" MSE3="  0.0000"/>
+      <TableRow ID="8233" M3_2_lox=" 27.4400" M32_lox=" 95.4600" M23_lox="  4.0900" M2_3_lox=" 12.8000" p1700="129.4000" MSE2="104.4000" MSE3="  0.0000"/>
+      <TableRow ID="8234" M3_2_lox=" 26.5600" M32_lox=" 92.6800" M23_lox="  4.5400" M2_3_lox=" 10.4900" p1700="101.6000" MSE2="100.0000" MSE3="  0.0000"/>
+      <TableRow ID="8235" M3_2_lox=" 20.1100" M32_lox=" 82.3300" M23_lox="  4.8000" M2_3_lox="  7.6900" p1700=" 59.3900" MSE2=" 73.7700" MSE3="  0.0000"/>
+      <TableRow ID="8236" M3_2_lox=" 11.5100" M32_lox=" 57.5300" M23_lox="  0.9900" M2_3_lox="  3.7000" p1700=" 17.1400" MSE2=" 44.0400" MSE3="  0.0000"/>
+      <TableRow ID="8237" M3_2_lox="  4.6300" M32_lox=" 28.7700" M23_lox="  1.3500" M2_3_lox="  2.2000" p1700="  8.8500" MSE2=" 25.2100" MSE3="  0.0000"/>
+      <TableRow ID="8238" M3_2_lox="  2.5800" M32_lox=" 18.0100" M23_lox="  3.7000" M2_3_lox="  3.5600" p1700="  5.0300" MSE2=" 12.1800" MSE3="  2.5800"/>
+      <TableRow ID="8239" M3_2_lox="  5.2500" M32_lox=" 13.9800" M23_lox=" 13.5800" M2_3_lox="  9.4400" p1700="  5.2500" MSE2="  7.9200" MSE3="  5.2500"/>
+      <TableRow ID="8240" M3_2_lox=" 13.2200" M32_lox=" 14.5400" M23_lox=" 30.6900" M2_3_lox=" 25.5500" p1700="  4.7400" MSE2="  6.0900" MSE3=" 13.2200"/>
+      <TableRow ID="8241" M3_2_lox=" 25.0200" M32_lox=" 17.5700" M23_lox=" 42.7200" M2_3_lox=" 33.4300" p1700="  4.5600" MSE2="  4.7400" MSE3=" 25.0200"/>
+      <TableRow ID="8242" M3_2_lox=" 23.2900" M32_lox=" 13.1100" M23_lox=" 37.5800" M2_3_lox=" 34.4300" p1700="  4.3800" MSE2="  4.4100" MSE3=" 23.2900"/>
+      <TableRow ID="8243" M3_2_lox=" 14.6200" M32_lox="  7.4900" M23_lox=" 23.3500" M2_3_lox=" 22.3800" p1700="  2.9900" MSE2="  2.9400" MSE3=" 14.6200"/>
+      <TableRow ID="8244" M3_2_lox="  6.2000" M32_lox="  2.5200" M23_lox=" 10.3200" M2_3_lox="  9.7400" p1700="  2.6500" MSE2="  1.5000" MSE3="  6.2000"/>
+      <TableRow ID="8245" M3_2_lox="  1.6700" M32_lox="  0.6700" M23_lox="  3.0400" M2_3_lox="  1.6000" p1700="  2.7000" MSE2="  0.5400" MSE3="  1.6700"/>
+      <TableRow ID="8246" M3_2_lox="  0.1900" M32_lox="  0.0900" M23_lox="  0.6900" M2_3_lox="  0.2000" p1700="  2.3500" MSE2="  0.8700" MSE3="  0.1900"/>
+      <TableRow ID="8247" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.2200" M2_3_lox="  0.0000" p1700="  3.7600" MSE2="  1.8100" MSE3="  0.0000"/>
+      <TableRow ID="8248" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0600" M2_3_lox="  0.0200" p1700="  4.5800" MSE2="  2.9200" MSE3="  0.0000"/>
+      <TableRow ID="8249" M3_2_lox="  0.0000" M32_lox="  0.0200" M23_lox="  0.0200" M2_3_lox="  0.0000" p1700="  4.9500" MSE2="  3.0900" MSE3="  0.0000"/>
+      <TableRow ID="8250" M3_2_lox="  0.0000" M32_lox="  0.0700" M23_lox="  0.0100" M2_3_lox="  0.0000" p1700="  5.0800" MSE2="  3.6200" MSE3="  0.0000"/>
+      <TableRow ID="8251" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0400" M2_3_lox="  0.0000" p1700="  4.3100" MSE2="  3.6400" MSE3="  0.0000"/>
+      <TableRow ID="8252" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  4.5100" MSE2="  2.2600" MSE3="  0.0000"/>
+      <TableRow ID="8253" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.8800" MSE2="  1.8100" MSE3="  0.0000"/>
+      <TableRow ID="8254" M3_2_lox="  0.0000" M32_lox="  0.0500" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.3400" MSE2="  2.9000" MSE3="  0.0000"/>
+      <TableRow ID="8255" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.9200" MSE2="  2.9600" MSE3="  0.0000"/>
+      <TableRow ID="8256" M3_2_lox="  0.0000" M32_lox="  0.0100" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  2.7500" MSE2="  3.6000" MSE3="  0.0000"/>
+      <TableRow ID="8257" M3_2_lox="  0.0000" M32_lox="  0.0200" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.4600" MSE2="  3.5100" MSE3="  0.0000"/>
+      <TableRow ID="8258" M3_2_lox="  0.0000" M32_lox="  0.0300" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.6100" MSE2="  4.2500" MSE3="  0.0000"/>
+      <TableRow ID="8259" M3_2_lox="  0.0000" M32_lox="  0.0200" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.9900" MSE2="  4.1200" MSE3="  0.0000"/>
+      <TableRow ID="8260" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.0600" MSE2="  2.7000" MSE3="  0.0000"/>
+      <TableRow ID="8261" M3_2_lox="  0.0000" M32_lox="  0.0200" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  4.1700" MSE2="  2.3400" MSE3="  0.0000"/>
+      <TableRow ID="8262" M3_2_lox="  0.0600" M32_lox="  0.0000" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  3.8700" MSE2="  2.5900" MSE3="  0.0600"/>
+      <TableRow ID="8263" M3_2_lox="  0.0000" M32_lox="  0.0100" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  4.4500" MSE2="  2.2200" MSE3="  0.0000"/>
+      <TableRow ID="8264" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  4.7400" MSE2="  2.5500" MSE3="  0.0000"/>
+      <TableRow ID="8265" M3_2_lox="  0.0000" M32_lox="  0.0100" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  4.0500" MSE2="  1.8400" MSE3="  0.0000"/>
+      <TableRow ID="8266" M3_2_lox="  0.0000" M32_lox="  0.0000" M23_lox="  0.0000" M2_3_lox="  0.0000" p1700="  4.9300" MSE2="  2.2500" MSE3="  0.0000"/>
+      <TableRow ID="8267" M3_2_lox="  0.0200" M32_lox="  0.0900" M23_lox="  0.0100" M2_3_lox="  0.0700" p1700="  3.9300" MSE2="  1.4000" MSE3="  0.0200"/>
+      <TableRow ID="8268" M3_2_lox="  0.8100" M32_lox="  0.7900" M23_lox="  0.4000" M2_3_lox="  0.3400" p1700="  4.6700" MSE2="  1.3200" MSE3="  0.8100"/>
+      <TableRow ID="8269" M3_2_lox="  4.1200" M32_lox="  4.2300" M23_lox="  1.7200" M2_3_lox="  1.9700" p1700="  5.4900" MSE2="  1.1100" MSE3="  4.1200"/>
+      <TableRow ID="8270" M3_2_lox="  9.0700" M32_lox=" 11.9300" M23_lox="  6.5800" M2_3_lox="  9.0600" p1700="  9.9100" MSE2="  2.4100" MSE3="  9.0700"/>
+      <TableRow ID="8271" M3_2_lox=" 12.8000" M32_lox=" 22.5900" M23_lox=" 16.3500" M2_3_lox=" 13.8700" p1700=" 19.9700" MSE2="  4.0700" MSE3=" 12.8000"/>
+      <TableRow ID="8272" M3_2_lox=" 17.9900" M32_lox=" 31.0600" M23_lox=" 19.1300" M2_3_lox=" 21.5100" p1700=" 28.4700" MSE2="  3.6700" MSE3=" 17.9900"/>
+      <TableRow ID="8273" M3_2_lox=" 18.7600" M32_lox=" 34.7000" M23_lox=" 17.8400" M2_3_lox=" 18.3700" p1700=" 31.3200" MSE2="  4.9600" MSE3=" 18.7600"/>
+      <TableRow ID="8274" M3_2_lox=" 17.1000" M32_lox=" 32.6200" M23_lox=" 16.4300" M2_3_lox=" 17.0200" p1700=" 21.5500" MSE2="  3.3300" MSE3=" 17.1000"/>
+      <TableRow ID="8275" M3_2_lox=" 14.9000" M32_lox=" 24.6800" M23_lox=" 13.2100" M2_3_lox=" 14.3500" p1700=" 20.0800" MSE2="  4.2800" MSE3=" 14.9000"/>
+      <TableRow ID="8276" M3_2_lox=" 11.7800" M32_lox=" 20.4200" M23_lox=" 10.0600" M2_3_lox="  8.6900" p1700=" 15.1400" MSE2="  2.9500" MSE3=" 11.7800"/>
+      <TableRow ID="8277" M3_2_lox="  8.9600" M32_lox=" 15.6500" M23_lox="  5.6700" M2_3_lox="  6.1300" p1700=" 11.9300" MSE2="  3.3100" MSE3="  8.9600"/>
+      <TableRow ID="8278" M3_2_lox="  5.8000" M32_lox=" 10.6300" M23_lox="  5.1100" M2_3_lox="  4.0300" p1700="  7.9100" MSE2="  1.1900" MSE3="  5.8000"/>
+      <TableRow ID="8279" M3_2_lox="  3.4200" M32_lox="  5.1300" M23_lox="  2.6500" M2_3_lox="  2.5500" p1700="  5.1000" MSE2="  0.2200" MSE3="  3.4200"/>
+      <TableRow ID="8280" M3_2_lox="  1.9900" M32_lox="  2.3100" M23_lox="  1.4100" M2_3_lox="  1.4700" p1700="  5.1800" MSE2="  0.0000" MSE3="  1.9900"/>
+      <TableRow ID="8281" M3_2_lox="  1.5500" M32_lox="  1.2400" M23_lox="  0.5700" M2_3_lox="  0.7000" p1700="  4.5400" MSE2="  0.0000" MSE3="  1.5500"/>
+      <TableRow ID="8282" M3_2_lox="  0.9300" M32_lox="  0.6600" M23_lox="  0.4800" M2_3_lox="  0.5600" p1700="  3.6200" MSE2="  0.0000" MSE3="  0.9300"/>
+      <TableRow ID="8283" M3_2_lox="  0.5300" M32_lox="  0.3100" M23_lox="  0.1100" M2_3_lox="  0.3500" p1700="  4.0300" MSE2="  0.0000" MSE3="  0.5300"/>
+      <TableRow ID="8284" M3_2_lox="  0.2100" M32_lox="  0.3300" M23_lox="  0.1700" M2_3_lox="  0.2800" p1700="  3.5300" MSE2="  0.0000" MSE3="  0.2100"/>
+    </RateData>
+    <TFData row="ID" col="TF">
+      <TableRow ID="8218" cad="  7.4360" eve="  8.1840" ftz="  2.7610" gt="138.5000" h="140.5000" hb="188.6000" kni=" 21.8300" Kr="  0.0000" odd="  0.0000" prd=" 28.8900" run="  5.2900" slp=" 95.2300" tll="  1.3390" bcd=" 70.2200" dst=" 62.9600" dic="  8.0100" zld="100.0000" gaga="100.0000" cic="111.0000" ken=" 42.5500" otd="144.1000"/>
+      <TableRow ID="8219" cad="  5.8890" eve=" 19.9200" ftz="  2.4750" gt="155.0000" h="177.1000" hb="191.5000" kni=" 24.6300" Kr="  0.0000" odd="  0.0000" prd=" 54.6800" run="  7.2520" slp=" 95.7500" tll="  0.5468" bcd=" 66.3900" dst=" 70.8700" dic="  9.0000" zld="100.0000" gaga="100.0000" cic="115.5000" ken=" 68.8200" otd="119.9000"/>
+      <TableRow ID="8220" cad="  5.5440" eve=" 52.0800" ftz="  1.1540" gt="171.9000" h="192.3000" hb="191.8000" kni=" 21.3400" Kr="  0.0000" odd="  0.0000" prd="110.2000" run=" 12.6500" slp="106.9000" tll="  0.7327" bcd=" 62.7600" dst=" 77.9600" dic=" 12.0000" zld="100.0000" gaga="100.0000" cic="116.0000" ken=" 59.7600" otd=" 97.1200"/>
+      <TableRow ID="8221" cad="  7.1220" eve="114.9000" ftz="  0.3051" gt="194.5000" h="187.6000" hb="192.9000" kni=" 11.7300" Kr="  0.4747" odd="  0.5079" prd="167.0000" run=" 26.9700" slp="121.8000" tll="  0.2681" bcd=" 58.6900" dst=" 82.8600" dic=" 18.9900" zld="100.0000" gaga="100.0000" cic="114.0000" ken=" 49.7900" otd=" 69.3300"/>
+      <TableRow ID="8222" cad="  9.0830" eve="174.3000" ftz="  2.2010" gt="205.2000" h="148.6000" hb="190.4000" kni="  4.4290" Kr="  1.0890" odd="  2.6310" prd="190.9000" run=" 66.0300" slp="105.9000" tll="  0.9860" bcd=" 55.6200" dst=" 97.8300" dic=" 27.0000" zld="100.0000" gaga="100.0000" cic="117.2000" ken=" 52.5100" otd=" 48.0400"/>
+      <TableRow ID="8223" cad=" 11.3700" eve="195.7000" ftz="  6.7220" gt="212.9000" h=" 81.6600" hb="189.7000" kni="  1.2390" Kr="  1.7120" odd="  4.9840" prd="142.1000" run="128.5000" slp=" 78.5900" tll="  0.8654" bcd=" 52.3800" dst="108.4000" dic=" 33.9900" zld="100.0000" gaga="100.0000" cic="116.0000" ken=" 43.2600" otd=" 34.3700"/>
+      <TableRow ID="8224" cad=" 13.7700" eve="169.4000" ftz=" 31.8400" gt="216.7000" h=" 29.3400" hb="189.0000" kni="  0.1652" Kr="  2.2910" odd=" 13.7300" prd=" 85.6000" run="182.6000" slp=" 63.2300" tll="  1.2340" bcd=" 49.6200" dst="107.2000" dic=" 32.0100" zld="100.0000" gaga="100.0000" cic="116.0000" ken=" 53.1700" otd=" 23.9200"/>
+      <TableRow ID="8225" cad=" 15.2900" eve="116.7000" ftz="110.1000" gt="213.6000" h=" 11.9800" hb="192.8000" kni="  0.0000" Kr="  2.6100" odd=" 47.1600" prd=" 75.9500" run="200.4000" slp=" 49.0000" tll="  1.5230" bcd=" 46.8800" dst="112.7000" dic=" 24.9900" zld="100.0000" gaga="100.0000" cic="117.5000" ken=" 57.0400" otd=" 20.5200"/>
+      <TableRow ID="8226" cad=" 16.2800" eve=" 64.5100" ftz="165.6000" gt="201.5000" h=" 16.5600" hb="192.0000" kni="  0.0000" Kr="  3.2180" odd="109.6000" prd=" 87.2700" run="183.3000" slp=" 28.9600" tll="  0.8256" bcd=" 44.6700" dst="114.7000" dic=" 21.9900" zld="100.0000" gaga="100.0000" cic="116.0000" ken="109.4000" otd=" 19.6000"/>
+      <TableRow ID="8227" cad=" 19.3100" eve=" 39.8000" ftz="179.4000" gt="184.9000" h=" 46.1000" hb="189.0000" kni="  0.0000" Kr="  4.1590" odd="166.0000" prd="101.7000" run="142.7000" slp=" 25.6000" tll="  1.1710" bcd=" 42.6500" dst="110.1000" dic=" 29.0100" zld="100.0000" gaga="100.0000" cic="116.5000" ken="185.7000" otd=" 18.2400"/>
+      <TableRow ID="8228" cad=" 22.6400" eve=" 32.1200" ftz="169.7000" gt="160.4000" h=" 99.5200" hb="188.3000" kni="  0.0000" Kr="  5.5820" odd="166.7000" prd="117.2000" run=" 87.4300" slp=" 30.6000" tll="  1.6900" bcd=" 40.2700" dst="108.6000" dic=" 30.0000" zld="100.0000" gaga="100.0000" cic="116.0000" ken="232.2000" otd=" 20.4100"/>
+      <TableRow ID="8229" cad=" 23.3600" eve=" 44.2700" ftz="128.7000" gt="126.0000" h="162.6000" hb="189.1000" kni="  0.0000" Kr="  8.1350" odd="135.9000" prd="143.5000" run=" 46.9600" slp=" 42.1700" tll="  1.5180" bcd=" 38.3200" dst=" 99.9000" dic=" 30.9900" zld="100.0000" gaga="100.0000" cic="115.5000" ken="151.0000" otd=" 21.1000"/>
+      <TableRow ID="8230" cad=" 23.8700" eve=" 91.7400" ftz=" 67.6900" gt=" 89.5900" h="196.1000" hb="192.3000" kni="  0.0000" Kr=" 12.1500" odd=" 87.4200" prd="139.8000" run=" 26.1300" slp=" 30.1500" tll="  1.2680" bcd=" 36.3800" dst=" 99.8800" dic=" 33.9900" zld="100.0000" gaga="100.0000" cic="117.5000" ken="129.6000" otd=" 23.0200"/>
+      <TableRow ID="8231" cad=" 27.9700" eve="157.3000" ftz=" 27.1400" gt=" 53.2100" h="204.9000" hb="193.7000" kni="  0.1001" Kr=" 17.7400" odd=" 55.2500" prd=" 94.3400" run=" 23.1800" slp=" 22.6400" tll="  1.2040" bcd=" 34.3200" dst=" 98.4200" dic=" 42.9900" zld="100.0000" gaga="100.0000" cic="117.0000" ken=" 72.4000" otd=" 24.6400"/>
+      <TableRow ID="8232" cad=" 32.2500" eve="189.0000" ftz=" 13.6900" gt=" 29.1000" h="184.5000" hb="195.3000" kni="  0.1270" Kr=" 27.1600" odd=" 37.2400" prd=" 38.8700" run=" 42.5900" slp=" 23.3600" tll="  1.2010" bcd=" 32.5000" dst=" 96.8700" dic=" 47.0100" zld="100.0000" gaga="100.0000" cic="116.5000" ken=" 65.7400" otd=" 23.3700"/>
+      <TableRow ID="8233" cad=" 35.5300" eve="184.4000" ftz=" 20.0800" gt=" 14.8500" h="120.3000" hb="197.6000" kni="  0.2069" Kr=" 40.8900" odd=" 27.1800" prd=" 16.2700" run=" 84.2100" slp=" 22.4300" tll="  1.4380" bcd=" 31.2400" dst=" 97.5700" dic=" 48.9900" zld="100.0000" gaga="100.0000" cic="118.0000" ken=" 55.9600" otd=" 19.8500"/>
+      <TableRow ID="8234" cad=" 36.8400" eve="156.9000" ftz=" 73.0000" gt="  7.4680" h=" 59.5300" hb="195.2000" kni="  0.0977" Kr=" 62.6600" odd=" 27.2200" prd=" 21.7000" run="120.7000" slp=" 22.3900" tll="  1.2980" bcd=" 29.2700" dst=" 99.9700" dic=" 45.9900" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 50.7000" otd=" 16.3200"/>
+      <TableRow ID="8235" cad=" 39.1900" eve="106.9000" ftz="152.5000" gt="  3.9770" h=" 27.1400" hb="187.4000" kni="  0.0000" Kr=" 93.3000" odd=" 51.7300" prd=" 34.5500" run="132.6000" slp=" 23.1700" tll="  1.5490" bcd=" 27.6900" dst="100.5000" dic=" 39.0000" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 48.5900" otd=" 15.6700"/>
+      <TableRow ID="8236" cad=" 41.0100" eve=" 59.6500" ftz="176.8000" gt="  2.2840" h=" 26.9600" hb="167.4000" kni="  0.0000" Kr="128.2000" odd="108.4000" prd=" 52.2600" run="122.8000" slp=" 26.0800" tll="  2.0210" bcd=" 26.2300" dst="108.0000" dic=" 38.0100" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 52.5900" otd=" 20.5100"/>
+      <TableRow ID="8237" cad=" 44.2900" eve=" 38.2300" ftz="166.3000" gt="  1.5150" h=" 70.2100" hb="140.4000" kni="  0.0000" Kr="158.1000" odd="140.1000" prd=" 70.2200" run=" 83.9800" slp=" 25.7300" tll="  1.2730" bcd=" 24.9500" dst="111.6000" dic=" 39.0000" zld="100.0000" gaga="100.0000" cic="118.0000" ken=" 45.6200" otd=" 20.6400"/>
+      <TableRow ID="8238" cad=" 48.1800" eve=" 50.7600" ftz="110.1000" gt="  1.1940" h="149.6000" hb="106.9000" kni="  0.0000" Kr="184.1000" odd="118.4000" prd=" 75.5800" run=" 46.9900" slp=" 23.7900" tll="  0.5364" bcd=" 23.5100" dst="114.5000" dic=" 44.0100" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 46.2500" otd=" 19.9600"/>
+      <TableRow ID="8239" cad=" 48.2000" eve="113.7000" ftz=" 48.4600" gt="  1.3250" h="199.2000" hb=" 75.5100" kni="  0.3700" Kr="199.3000" odd=" 63.0200" prd=" 49.0800" run=" 31.5600" slp=" 26.8300" tll="  1.6940" bcd=" 22.2300" dst="110.1000" dic=" 48.9900" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 50.3300" otd=" 18.2500"/>
+      <TableRow ID="8240" cad=" 50.9700" eve="184.3000" ftz=" 23.4800" gt="  1.0790" h="198.5000" hb=" 50.4500" kni="  1.5170" Kr="204.0000" odd=" 31.5900" prd=" 16.1600" run=" 38.3600" slp=" 24.1000" tll="  1.2160" bcd=" 20.8100" dst="118.3000" dic=" 57.0000" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 51.2400" otd=" 22.0400"/>
+      <TableRow ID="8241" cad=" 52.2500" eve="204.1000" ftz=" 26.0500" gt="  1.2300" h="153.1000" hb=" 33.4800" kni="  2.7010" Kr="206.2000" odd=" 18.9700" prd="  5.3820" run=" 78.4800" slp=" 23.6200" tll="  1.6020" bcd=" 19.5600" dst="116.2000" dic=" 71.0100" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 54.0800" otd=" 16.1600"/>
+      <TableRow ID="8242" cad=" 56.1200" eve="172.4000" ftz=" 74.3100" gt="  1.1010" h=" 85.0200" hb=" 23.4600" kni="  3.4600" Kr="209.9000" odd=" 22.5300" prd=" 11.9300" run="140.2000" slp=" 22.4500" tll="  1.1240" bcd=" 18.6100" dst="116.9000" dic=" 81.0000" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 42.9900" otd=" 17.6600"/>
+      <TableRow ID="8243" cad=" 57.6800" eve="107.2000" ftz="146.2000" gt="  1.0540" h=" 45.3000" hb=" 15.5300" kni="  5.1830" Kr="211.3000" odd=" 66.3900" prd=" 30.5500" run="164.2000" slp=" 22.4400" tll="  1.1100" bcd=" 17.5300" dst="118.1000" dic=" 83.0100" zld="100.0000" gaga="100.0000" cic="120.0000" ken=" 43.3300" otd=" 16.4300"/>
+      <TableRow ID="8244" cad=" 62.1100" eve=" 53.3100" ftz="166.7000" gt="  0.5222" h=" 39.6300" hb=" 10.9100" kni="  9.3230" Kr="208.1000" odd="124.6000" prd=" 52.1500" run="137.2000" slp=" 20.9800" tll="  1.4650" bcd=" 16.6900" dst="116.8000" dic=" 69.0000" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 42.8200" otd=" 18.1800"/>
+      <TableRow ID="8245" cad=" 62.5800" eve=" 37.0100" ftz="150.4000" gt="  0.3432" h=" 69.4600" hb="  7.4200" kni=" 17.9200" Kr="203.5000" odd="147.3000" prd=" 65.1500" run=" 88.1200" slp=" 19.6700" tll="  2.5790" bcd=" 15.6200" dst="119.5000" dic=" 63.0000" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 41.6500" otd=" 20.4800"/>
+      <TableRow ID="8246" cad=" 68.5300" eve=" 67.6200" ftz=" 92.8600" gt="  0.1234" h="124.0000" hb="  5.0700" kni=" 29.2200" Kr="198.5000" odd="127.3000" prd=" 58.9200" run=" 45.9500" slp=" 22.0500" tll="  1.6530" bcd=" 14.6100" dst="116.4000" dic=" 68.0100" zld="100.0000" gaga="100.0000" cic="118.0000" ken=" 47.4100" otd=" 20.8200"/>
+      <TableRow ID="8247" cad=" 67.5400" eve="136.8000" ftz=" 35.7600" gt="  0.0865" h="147.3000" hb="  3.4700" kni=" 43.1700" Kr="186.6000" odd=" 83.2800" prd=" 31.8600" run=" 30.1500" slp=" 21.7700" tll="  0.9272" bcd=" 13.8100" dst="118.7000" dic=" 69.0000" zld="100.0000" gaga="100.0000" cic="116.5000" ken=" 50.3400" otd=" 26.6700"/>
+      <TableRow ID="8248" cad=" 68.7000" eve="180.8000" ftz=" 20.4300" gt="  0.0000" h="110.7000" hb="  2.6100" kni=" 61.7900" Kr="169.1000" odd=" 45.7400" prd=" 10.4800" run=" 47.5800" slp=" 19.9300" tll="  1.5290" bcd=" 13.0700" dst="126.1000" dic=" 72.0000" zld="100.0000" gaga="100.0000" cic="119.0000" ken=" 48.5300" otd=" 22.2900"/>
+      <TableRow ID="8249" cad=" 71.4800" eve="169.3000" ftz=" 38.0600" gt="  0.0000" h=" 52.9700" hb="  1.6300" kni=" 87.1100" Kr="152.5000" odd=" 37.4100" prd="  9.5420" run=" 87.5300" slp=" 16.1400" tll="  1.1460" bcd=" 12.3000" dst="124.1000" dic=" 59.0100" zld="100.0000" gaga="100.0000" cic="114.0000" ken=" 47.8800" otd=" 23.4900"/>
+      <TableRow ID="8250" cad=" 71.2900" eve="111.3000" ftz=" 94.0500" gt="  0.0000" h=" 21.2200" hb="  1.1400" kni="119.3000" Kr="132.5000" odd=" 56.9300" prd=" 21.3200" run="112.7000" slp=" 18.6200" tll="  0.6402" bcd=" 11.5900" dst="121.1000" dic=" 50.0100" zld="100.0000" gaga="100.0000" cic="115.0000" ken=" 44.8700" otd=" 23.1300"/>
+      <TableRow ID="8251" cad=" 75.2400" eve=" 53.2800" ftz="126.0000" gt="  0.0000" h=" 16.0500" hb="  0.7700" kni="149.0000" Kr="106.5000" odd=" 90.4300" prd=" 38.6100" run=" 92.9500" slp=" 15.5700" tll="  1.7520" bcd=" 10.8500" dst="125.3000" dic=" 39.0000" zld="100.0000" gaga="100.0000" cic="113.5000" ken=" 43.5200" otd=" 23.6300"/>
+      <TableRow ID="8252" cad=" 73.5100" eve=" 28.6900" ftz="116.7000" gt="  0.0000" h=" 44.0300" hb="  0.2400" kni="172.0000" Kr=" 79.5200" odd="101.7000" prd=" 53.4000" run=" 58.8200" slp=" 16.8000" tll="  2.1830" bcd=" 10.2900" dst="126.5000" dic=" 30.9900" zld="100.0000" gaga="100.0000" cic="115.0000" ken=" 37.6700" otd=" 23.9700"/>
+      <TableRow ID="8253" cad=" 76.0900" eve=" 35.1400" ftz=" 71.8900" gt="  0.0000" h="100.5000" hb="  0.0700" kni="189.0000" Kr=" 56.6100" odd=" 70.7800" prd=" 54.5900" run=" 39.7900" slp=" 22.0800" tll="  1.7530" bcd="  9.6500" dst="126.7000" dic=" 30.9900" zld="100.0000" gaga="100.0000" cic="113.5000" ken=" 43.7300" otd=" 20.3400"/>
+      <TableRow ID="8254" cad=" 75.9600" eve=" 78.3400" ftz=" 31.5200" gt="  0.0000" h="148.5000" hb="  0.0000" kni="197.3000" Kr=" 37.0100" odd=" 34.8700" prd=" 37.5900" run=" 37.8300" slp=" 17.5700" tll="  1.0180" bcd="  8.9600" dst="124.0000" dic=" 30.9900" zld="100.0000" gaga="100.0000" cic="112.0000" ken=" 39.7600" otd=" 19.8300"/>
+      <TableRow ID="8255" cad=" 74.1700" eve="132.6000" ftz=" 22.5600" gt="  2.8150" h="152.9000" hb="  0.0000" kni="199.0000" Kr=" 23.4000" odd=" 17.8000" prd=" 17.9500" run=" 57.5500" slp=" 15.6000" tll="  0.3558" bcd="  8.4800" dst="125.5000" dic=" 38.0100" zld="100.0000" gaga="100.0000" cic="112.0000" ken=" 34.0500" otd=" 22.4700"/>
+      <TableRow ID="8256" cad=" 76.8800" eve="155.1000" ftz=" 45.4400" gt=" 10.2100" h="105.0000" hb="  0.0000" kni="195.8000" Kr=" 15.6300" odd=" 25.2100" prd="  9.4680" run=" 95.4600" slp=" 15.7000" tll="  1.0710" bcd="  8.0700" dst="120.6000" dic=" 42.0000" zld="100.0000" gaga="100.0000" cic="111.5000" ken=" 33.1800" otd=" 23.2800"/>
+      <TableRow ID="8257" cad=" 75.3900" eve="132.8000" ftz="101.2000" gt=" 23.7800" h=" 56.4900" hb="  0.0000" kni="185.5000" Kr=" 10.0500" odd=" 55.6900" prd=" 15.5000" run="122.4000" slp=" 16.6500" tll="  1.0230" bcd="  7.6400" dst="117.5000" dic=" 44.0100" zld="100.0000" gaga="100.0000" cic="110.0000" ken=" 38.8000" otd=" 20.8000"/>
+      <TableRow ID="8258" cad=" 81.8500" eve=" 87.3100" ftz="152.3000" gt=" 44.4800" h=" 32.6500" hb="  0.0000" kni="165.4000" Kr="  6.4120" odd="104.0000" prd=" 32.9800" run="117.5000" slp=" 13.6900" tll="  0.3607" bcd="  7.1700" dst="113.9000" dic=" 45.9900" zld="100.0000" gaga="100.0000" cic="109.5000" ken=" 35.8000" otd=" 19.8000"/>
+      <TableRow ID="8259" cad=" 81.1800" eve=" 50.6100" ftz="160.9000" gt=" 73.3900" h=" 47.4700" hb="  0.0000" kni="138.9000" Kr="  4.3720" odd="126.8000" prd=" 47.3000" run=" 79.5200" slp=" 14.5700" tll="  1.1980" bcd="  6.8100" dst="114.6000" dic=" 50.0100" zld="100.0000" gaga="100.0000" cic="107.2000" ken=" 37.5200" otd=" 24.3600"/>
+      <TableRow ID="8260" cad=" 80.7300" eve=" 41.7100" ftz="133.1000" gt="104.9000" h=" 98.1900" hb="  0.0000" kni="112.1000" Kr="  3.0230" odd="121.0000" prd=" 56.4900" run=" 43.8200" slp=" 15.0700" tll="  0.9834" bcd="  6.3600" dst="111.6000" dic=" 56.0100" zld="100.0000" gaga="100.0000" cic="109.0000" ken=" 35.0500" otd=" 25.7100"/>
+      <TableRow ID="8261" cad=" 80.7400" eve=" 66.5000" ftz=" 83.2100" gt="126.9000" h="145.0000" hb="  0.0000" kni=" 87.6100" Kr="  1.9920" odd=" 89.2300" prd=" 60.4900" run=" 25.4400" slp=" 18.7600" tll="  0.3616" bcd="  5.9500" dst="114.5000" dic=" 63.9900" zld="100.0000" gaga="100.0000" cic="106.8000" ken=" 49.2400" otd=" 27.0900"/>
+      <TableRow ID="8262" cad=" 80.3300" eve="115.8000" ftz=" 41.0700" gt="141.8000" h="164.0000" hb="  0.0000" kni=" 61.5800" Kr="  1.5120" odd=" 58.1300" prd=" 51.7900" run=" 26.3800" slp=" 18.6100" tll="  0.7669" bcd="  5.7200" dst="115.8000" dic=" 72.0000" zld="100.0000" gaga="100.0000" cic="106.0000" ken=" 37.9200" otd=" 23.2900"/>
+      <TableRow ID="8263" cad=" 82.3700" eve="152.3000" ftz=" 21.6800" gt="152.1000" h="145.3000" hb="  0.0000" kni=" 44.9200" Kr="  1.1220" odd=" 40.3900" prd=" 29.9700" run=" 51.0700" slp=" 13.2400" tll="  0.0899" bcd="  5.5300" dst="119.0000" dic=" 81.9900" zld="100.0000" gaga="100.0000" cic="104.0000" ken=" 46.6800" otd=" 23.1400"/>
+      <TableRow ID="8264" cad=" 85.2900" eve="152.3000" ftz=" 27.2400" gt="155.3000" h="103.9000" hb="  0.0000" kni=" 32.6500" Kr="  0.8265" odd=" 36.8000" prd=" 17.4700" run="100.7000" slp=" 16.1700" tll="  0.0000" bcd="  5.1800" dst="124.0000" dic=" 89.0100" zld="100.0000" gaga="100.0000" cic="102.5000" ken=" 44.5600" otd=" 21.3200"/>
+      <TableRow ID="8265" cad=" 89.1300" eve="120.6000" ftz=" 61.9800" gt="156.1000" h=" 60.1500" hb="  0.5500" kni=" 23.6600" Kr="  0.5004" odd=" 56.0400" prd=" 15.5000" run="144.9000" slp=" 14.7600" tll="  0.4310" bcd="  4.9200" dst="121.6000" dic=" 81.9900" zld="100.0000" gaga="100.0000" cic="103.0000" ken=" 33.8700" otd=" 25.8700"/>
+      <TableRow ID="8266" cad=" 90.5100" eve=" 75.6500" ftz="116.2000" gt="150.3000" h=" 34.4900" hb="  2.9900" kni=" 17.0200" Kr="  0.0927" odd="100.2000" prd=" 27.7600" run="155.3000" slp=" 16.7300" tll="  1.3330" bcd="  4.5600" dst="122.3000" dic=" 81.9900" zld="100.0000" gaga="100.0000" cic="101.0000" ken=" 38.7300" otd=" 26.8000"/>
+      <TableRow ID="8267" cad=" 92.7300" eve=" 40.7200" ftz="143.7000" gt="138.9000" h=" 38.7600" hb="  6.9000" kni=" 12.6500" Kr="  0.0000" odd="133.2000" prd=" 49.4100" run="132.2000" slp=" 11.3400" tll="  2.2130" bcd="  4.3300" dst="116.8000" dic=" 80.0100" zld="100.0000" gaga="100.0000" cic=" 99.0000" ken=" 37.0200" otd=" 28.8300"/>
+      <TableRow ID="8268" cad=" 95.6300" eve=" 27.5200" ftz="141.4000" gt="121.6000" h=" 78.5600" hb=" 12.9800" kni="  9.6170" Kr="  0.0000" odd="130.8000" prd=" 67.1400" run=" 93.2300" slp=" 11.2300" tll="  1.7490" bcd="  4.0900" dst="126.2000" dic=" 77.0100" zld="100.0000" gaga="100.0000" cic=" 98.0000" ken=" 35.8600" otd=" 24.6400"/>
+      <TableRow ID="8269" cad=" 99.4300" eve=" 42.2100" ftz="114.9000" gt="103.0000" h="126.2000" hb=" 22.2600" kni="  7.1910" Kr="  0.0000" odd="106.7000" prd=" 70.5800" run=" 60.4900" slp=" 12.7500" tll="  2.4630" bcd="  3.8100" dst="123.9000" dic=" 72.0000" zld="100.0000" gaga="100.0000" cic=" 96.0000" ken=" 30.2100" otd=" 27.3200"/>
+      <TableRow ID="8270" cad="101.7000" eve=" 82.3900" ftz=" 70.8100" gt=" 80.3000" h="158.5000" hb=" 34.5800" kni="  6.0810" Kr="  0.0000" odd=" 67.2900" prd=" 60.8900" run=" 42.1400" slp=" 12.9800" tll="  3.7330" bcd="  3.7000" dst="128.7000" dic=" 68.0100" zld="100.0000" gaga="100.0000" cic=" 93.0000" ken=" 43.2200" otd=" 28.0400"/>
+      <TableRow ID="8271" cad="100.6000" eve="130.4000" ftz=" 34.0800" gt=" 56.9600" h="171.1000" hb=" 47.5400" kni="  5.5910" Kr="  0.0000" odd=" 43.2100" prd=" 38.7200" run=" 32.2600" slp=" 11.8500" tll="  4.9490" bcd="  3.4700" dst="126.6000" dic=" 69.0000" zld="100.0000" gaga="100.0000" cic=" 93.5000" ken=" 37.1300" otd=" 25.1100"/>
+      <TableRow ID="8272" cad="101.3000" eve="158.6000" ftz=" 23.5600" gt=" 40.8600" h="156.5000" hb=" 60.6000" kni="  4.9610" Kr="  0.2547" odd=" 23.6500" prd=" 15.0900" run=" 33.6300" slp=" 12.2900" tll="  7.4050" bcd="  3.2400" dst="131.6000" dic=" 72.9900" zld="100.0000" gaga="100.0000" cic=" 93.0000" ken=" 43.7400" otd=" 22.7900"/>
+      <TableRow ID="8273" cad="104.5000" eve="165.7000" ftz=" 29.0300" gt=" 29.3300" h="121.1000" hb=" 70.6500" kni="  4.4680" Kr="  0.3810" odd=" 13.8600" prd="  4.2640" run=" 48.4400" slp="  8.5730" tll=" 11.8100" bcd="  3.1400" dst="123.8000" dic=" 68.0100" zld="100.0000" gaga="100.0000" cic=" 90.0000" ken=" 46.7100" otd=" 21.6600"/>
+      <TableRow ID="8274" cad="105.6000" eve="155.4000" ftz=" 50.3300" gt=" 21.5700" h=" 73.2200" hb=" 79.1600" kni="  3.7110" Kr="  0.3828" odd=" 10.3000" prd="  1.1790" run=" 70.5800" slp=" 10.1000" tll=" 16.3600" bcd="  3.0000" dst="124.1000" dic=" 65.0100" zld="100.0000" gaga="100.0000" cic=" 87.5000" ken=" 31.8900" otd=" 22.3500"/>
+      <TableRow ID="8275" cad="107.6000" eve="130.9000" ftz=" 87.6000" gt=" 15.5200" h=" 34.8100" hb=" 85.8600" kni="  3.2010" Kr="  0.2848" odd=" 12.1800" prd="  1.1050" run=" 85.3200" slp="  9.0640" tll=" 24.3600" bcd="  2.8900" dst="118.1000" dic=" 57.0000" zld="100.0000" gaga="100.0000" cic=" 87.5000" ken=" 32.4900" otd=" 21.7000"/>
+      <TableRow ID="8276" cad="106.6000" eve="100.5000" ftz="120.8000" gt=" 12.4200" h=" 16.1200" hb=" 91.3600" kni="  2.2230" Kr="  0.4831" odd=" 15.4300" prd="  1.7610" run=" 95.2100" slp="  9.4960" tll=" 32.8000" bcd="  2.8100" dst="117.7000" dic=" 45.0000" zld="100.0000" gaga="100.0000" cic=" 84.0000" ken=" 35.2300" otd=" 18.7200"/>
+      <TableRow ID="8277" cad="107.5000" eve=" 72.7300" ftz="131.9000" gt="  9.6690" h="  7.1120" hb=" 92.4300" kni="  1.8240" Kr="  0.2216" odd=" 15.9800" prd="  1.3060" run=" 96.7300" slp="  8.9950" tll=" 48.5000" bcd="  2.7500" dst="108.0000" dic=" 38.0100" zld="100.0000" gaga="100.0000" cic=" 82.0000" ken=" 53.0900" otd=" 17.9900"/>
+      <TableRow ID="8278" cad="105.1000" eve=" 49.9500" ftz="130.7000" gt="  7.6670" h="  4.9100" hb=" 89.7200" kni="  1.4340" Kr="  0.2574" odd=" 11.3100" prd="  1.4800" run=" 88.4300" slp="  8.9440" tll=" 66.5000" bcd="  2.7000" dst=" 98.3700" dic=" 38.0100" zld="100.0000" gaga="100.0000" cic=" 80.0000" ken=" 51.2400" otd=" 14.3100"/>
+      <TableRow ID="8279" cad="101.6000" eve=" 33.2400" ftz="116.0000" gt="  5.7550" h="  3.1590" hb=" 83.2400" kni="  1.2360" Kr="  0.2354" odd="  8.8200" prd="  1.5770" run=" 73.4900" slp="  9.2900" tll=" 82.2400" bcd="  2.5700" dst=" 82.2900" dic=" 36.9900" zld="100.0000" gaga="100.0000" cic=" 78.0000" ken="100.7000" otd=" 16.6800"/>
+      <TableRow ID="8280" cad=" 94.8200" eve=" 20.8300" ftz=" 94.5600" gt="  4.4800" h="  3.0020" hb=" 74.4400" kni="  0.8537" Kr="  0.0426" odd="  5.3440" prd="  1.2980" run=" 56.6200" slp="  9.9530" tll=" 99.5300" bcd="  2.5200" dst=" 70.4100" dic=" 33.0000" zld="100.0000" gaga="100.0000" cic=" 76.0000" ken="112.7000" otd=" 14.4900"/>
+      <TableRow ID="8281" cad=" 90.5000" eve=" 11.8100" ftz=" 63.3900" gt="  3.0100" h="  3.3180" hb=" 63.6000" kni="  0.6086" Kr="  0.0000" odd="  2.7480" prd="  1.5700" run=" 40.8700" slp="  7.7230" tll="120.0000" bcd="  2.4500" dst=" 63.3900" dic=" 27.9900" zld="100.0000" gaga="100.0000" cic=" 71.5000" ken="129.0000" otd=" 13.1400"/>
+      <TableRow ID="8282" cad=" 81.5500" eve="  6.1260" ftz=" 35.8300" gt="  2.0710" h="  3.0370" hb=" 51.6300" kni="  0.3210" Kr="  0.0000" odd="  2.1180" prd="  1.7910" run=" 29.2100" slp=" 11.2600" tll="130.7000" bcd="  2.3100" dst=" 53.0800" dic=" 21.0000" zld="100.0000" gaga="100.0000" cic=" 70.0000" ken="121.3000" otd=" 15.6200"/>
+      <TableRow ID="8283" cad=" 73.5200" eve="  2.9360" ftz=" 17.8400" gt="  1.0140" h="  2.4700" hb=" 40.5900" kni="  0.0000" Kr="  0.0000" odd="  1.8470" prd="  1.8630" run=" 15.8200" slp=" 12.6300" tll="138.3000" bcd="  2.1500" dst=" 47.1500" dic=" 11.0100" zld="100.0000" gaga="100.0000" cic=" 62.5000" ken="103.2000" otd=" 14.4200"/>
+      <TableRow ID="8284" cad=" 66.3400" eve="  1.1700" ftz="  8.4110" gt="  0.3210" h="  1.7950" hb=" 31.4400" kni="  0.0000" Kr="  0.0000" odd="  1.7450" prd="  1.5160" run=" 11.7800" slp=" 13.5900" tll="143.1000" bcd="  2.0200" dst=" 40.9800" dic="  6.9900" zld="100.0000" gaga="100.0000" cic=" 61.0000" ken=" 68.1300" otd=" 13.7200"/>
+    </TFData>
+  </Output>
 </Root>
