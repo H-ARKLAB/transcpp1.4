@@ -47,7 +47,7 @@ struct BindingSite
   vector< vector<double> > saved_effective_occupancy;
 };
 
-bool compareBindingSiteRight(BindingSite* a, BindingSite* b);
+bool compareBindingSiteRight(const BindingSite* a, const BindingSite* b);
 bool compareBindingSiteLeft(BindingSite* a, BindingSite* b);
 bool overlaps(BindingSite& site1, BindingSite& site2);
 bool bad_overlap_function(BindingSite& site1, BindingSite& site2);

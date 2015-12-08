@@ -487,7 +487,7 @@ double Score::getScore()
     double inv = 1-ratio;
     if (ratio < 0.9)
     {
-      double inv = 0.9-ratio;
+      inv = 0.9-ratio;
       double square = inv*inv;
       //cerr << "ratio is " << ratio << " for penalty " << penalty_weight*square << endl;
       scores[i] += penalty_weight*square;

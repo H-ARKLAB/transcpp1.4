@@ -136,8 +136,9 @@ bool Subgroup::overlaps(BindingSite* site1, BindingSite* site2)
 
 void Subgroup::sort()
 {
-  std::sort(sites_f.begin(), sites_f.end(), compareBindingSiteRight);
   int nsites = sites_f.size();
+  
+  std::sort(sites_f.begin(), sites_f.end(), compareBindingSiteRight);
   sites_r.resize(nsites);
   f2r.resize(nsites);
   for (int i=0; i<nsites; i++) 
@@ -373,6 +374,7 @@ void Subgroup::print(ostream& os)
   os << setw(10) << "last_f" << setw(10) << "last_r" << endl;
   
   int nsites = sites_f.size();
+  cerr << nsites << endl;
   for (int i=0; i<nsites; i++)
   {
     os << setw(10) << i;
@@ -382,6 +384,7 @@ void Subgroup::print(ostream& os)
     os << setprecision(3) << setw(10);
     os << ZF[i+1].last;
     os << setw(10) << ZR[f2r[i]+1].last << endl;
+    os << endl;
   }
 }
 

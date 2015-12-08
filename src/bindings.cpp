@@ -315,15 +315,16 @@ void Bindings::order_sites(Gene& gene)
     int cur_total = fsites.size();
     fsites.resize(cur_total+nsites);
     for (int j=0; j<nsites; j++)
+    {
       fsites[cur_total + j] = tf_sites[j].get();
+    }
   }
-  
-  // sort forward sites
+  int nsites=fsites.size();
   
   std::sort(fsites.begin(), fsites.end(), compareBindingSiteRight);
 
   // sort reverse sites
-  int nsites = fsites.size();
+  nsites = fsites.size();
   
   rsites.resize(nsites);
   for (int i=0; i<nsites; i++)
@@ -1096,7 +1097,7 @@ bool Bindings::isEqual(Bindings& test_bindings)
       
   }
     
-  // first check if scores are the same
+  return true;
 }
   
 

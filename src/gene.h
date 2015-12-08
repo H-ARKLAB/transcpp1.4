@@ -9,8 +9,6 @@
 #ifndef GENE_H
 #define GENE_H
 
-using namespace std;
-
 #include <vector>
 #include <list>
 #include <string>

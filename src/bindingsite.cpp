@@ -50,14 +50,16 @@ bool compareBindingSiteRight(BindingSite* a, BindingSite* b)
 }
 */
 
-bool compareBindingSiteRight(BindingSite* a, BindingSite* b)
+bool compareBindingSiteRight(const BindingSite* a, const BindingSite* b)
 {
   int A = a->n;
   int B = b->n;
-  
+    
   if (A < B)
     return true;
   else if (A > B)
+    return false;
+  else if (a==b)
     return false;
   else
   {
@@ -65,14 +67,20 @@ bool compareBindingSiteRight(BindingSite* a, BindingSite* b)
     TF& tfb = *(b->tf);
     int idxa = tfa.getIndex();
     int idxb = tfb.getIndex();
+    
     if (idxa < idxb)
       return true;
     else if (idxa > idxb)
       return false;
-    else if (a->orientation == 'F')
+    else if (a->orientation == 'F' && b->orientation == 'R')
       return true;
-    else
+    else if (a->orientation == 'R' && b->orientation == 'F')
       return false;
+    else
+    {
+      error("sites should never be equal!");
+      return false;
+    }
   }
 }
 
@@ -92,6 +100,8 @@ bool compareBindingSiteLeft(BindingSite* a, BindingSite* b)
     return true;
   else if (A < B)
     return false;
+  else if (a==b)
+    return false;
   else
   {
     TF& tfa = *(a->tf);
@@ -102,10 +112,15 @@ bool compareBindingSiteLeft(BindingSite* a, BindingSite* b)
       return true;
     else if (idxa > idxb)
       return false;
-    else if (a->orientation == 'F')
+    else if (a->orientation == 'F' && b->orientation == 'R')
       return true;
-    else
+    else if (a->orientation == 'R' && b->orientation == 'F')
       return false;
+    else
+    {
+      error("sites should never be equal!");
+      return false;
+    }
   }
 }
 

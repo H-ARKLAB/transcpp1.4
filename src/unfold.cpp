@@ -120,39 +120,39 @@ int main(int argc, char* argv[])
         section_name = optarg;
         break;
       case 0: 
-        if (longOpts[longIndex].name == "sites")
+        if (longOpts[longIndex].name == string("sites"))
           sites = true;
-        else if (longOpts[longIndex].name == "score")
+        else if (longOpts[longIndex].name == string("score"))
           score = true;
-        else if (longOpts[longIndex].name == "scores")
+        else if (longOpts[longIndex].name == string("scores"))
           scores = true;
-        else if (longOpts[longIndex].name == "rate")
+        else if (longOpts[longIndex].name == string("rate"))
           rate = true;
-        else if (longOpts[longIndex].name == "data")
+        else if (longOpts[longIndex].name == string("data"))
           data = true;
-        else if (longOpts[longIndex].name == "gene")
+        else if (longOpts[longIndex].name == string("gene"))
           gene_name = optarg;
-        else if (longOpts[longIndex].name == "tf")
+        else if (longOpts[longIndex].name == string("tf"))
           tf_name = optarg;
-        else if (longOpts[longIndex].name == "occupancy")
+        else if (longOpts[longIndex].name == string("occupancy"))
           occupancy = true;
-        else if (longOpts[longIndex].name == "modeocc")
+        else if (longOpts[longIndex].name == string("modeocc"))
           modeocc = true;
-        else if (longOpts[longIndex].name == "effocc")
+        else if (longOpts[longIndex].name == string("effocc"))
           effocc = true;
-        else if (longOpts[longIndex].name == "subgroups")
+        else if (longOpts[longIndex].name == string("subgroups"))
           subgroups = true;
-        else if (longOpts[longIndex].name == "section")
+        else if (longOpts[longIndex].name == string("section"))
           section_name = optarg;
-        else if (longOpts[longIndex].name == "params")
+        else if (longOpts[longIndex].name == string("params"))
           params = true;
-        else if (longOpts[longIndex].name == "check-scale")
+        else if (longOpts[longIndex].name == string("check-scale"))
           checkscale = true;
-        else if (longOpts[longIndex].name == "R2D")
+        else if (longOpts[longIndex].name == string("R2D"))
           R2D = true;
-        else if (longOpts[longIndex].name == "N2D")
+        else if (longOpts[longIndex].name == string("N2D"))
           N2D = true;
-        else if (longOpts[longIndex].name == "invert")
+        else if (longOpts[longIndex].name == string("invert"))
           invert = true;
         else
           display_usage();
