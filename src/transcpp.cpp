@@ -131,9 +131,12 @@ int main(int argc, char* argv[])
     }    
    
     embryo.write("Output", root_node);
-    boost::property_tree::xml_writer_settings<char> settings(' ', 2);
+    //boost::property_tree::xml_writer_settings<char> settings(' ', 2);
     //write_xml_element(infile, basic_string<ptree::key_type::value_type>(), pt, -1, settings);
-    write_xml(xmlname, pt, std::locale(), settings);
+    write_xml(xmlname, 
+      pt, 
+      std::locale(), 
+      boost::property_tree::xml_writer_make_settings<string>(' ', 2));
     
 
     /* check that I can reset everything and get the same correct answer */

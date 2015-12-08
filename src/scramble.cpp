@@ -109,9 +109,12 @@ int main(int argc, char* argv[])
 
   //root_node.erase("Input");
   //embryo.write("Input",  root_node);
-  boost::property_tree::xml_writer_settings<char> settings(' ', 2);
   //write_xml_element(cout, basic_string<ptree::key_type::value_type>(), output, -1, settings);
-  write_xml(xmlname2, pt, std::locale(), settings);
+  write_xml(xmlname2, 
+    pt, 
+    std::locale(), 
+    boost::property_tree::xml_writer_make_settings<string>(' ', 2));
+  
 
   return 0;
 }

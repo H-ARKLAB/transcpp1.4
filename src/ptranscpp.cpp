@@ -227,8 +227,11 @@ int main(int argc, char** argv)
       cerr << "The energy is " << embryo.get_score() << " after loop" << endl;
       embryo.write("Output", root_node);
       annealer_plsa->ptreeGetResult(root_node);
-      boost::property_tree::xml_writer_settings<char> settings(' ', 2);
-      write_xml(xmlname, pt, std::locale(), settings);
+      write_xml_element(os, 
+        basic_string<ptree::key_type::value_type>(), 
+        pt, 
+        -1, 
+        boost::property_tree::xml_writer_make_settings<string>(' ', 2));
     }
     delete annealer_plsa;
   }
@@ -246,8 +249,11 @@ int main(int argc, char** argv)
       cerr << "The energy is " << embryo.get_score() << " after loop" << endl;
       embryo.write("Output", root_node);
       annealer_expHoldP->ptreeGetResult(root_node);
-      boost::property_tree::xml_writer_settings<char> settings(' ', 2);
-      write_xml(xmlname, pt, std::locale(), settings);
+      write_xml_element(os, 
+        basic_string<ptree::key_type::value_type>(), 
+        pt, 
+        -1, 
+        boost::property_tree::xml_writer_make_settings<string>(' ', 2));
     }
     delete annealer_expHoldP;
   }

@@ -148,8 +148,11 @@ void Gene::write(ostream& os) const
 {
   ptree pt;
   write(pt);
-  boost::property_tree::xml_writer_settings<char> settings(' ', 2);
-  write_xml_element(os, basic_string<ptree::key_type::value_type>(), pt, -1, settings);
+  write_xml_element(os, 
+    basic_string<ptree::key_type::value_type>(), 
+    pt, 
+    -1, 
+    boost::property_tree::xml_writer_make_settings<string>(' ', 2));
 }
 
 void Gene::write(ptree& pt) const
@@ -495,7 +498,10 @@ void GeneContainer::write(ostream& os)
 {
   ptree pt;
   write(pt);
-  boost::property_tree::xml_writer_settings<char> settings(' ', 2);
-  write_xml_element(os, basic_string<ptree::key_type::value_type>(), pt, -1, settings);
+  write_xml_element(os, 
+    basic_string<ptree::key_type::value_type>(), 
+    pt, 
+    -1, 
+    boost::property_tree::xml_writer_make_settings<string>(' ', 2));
 }
 

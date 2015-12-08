@@ -437,8 +437,11 @@ void TF::write(ostream& os)
   ptree pt; // boost property tree
   write(pt);
   
-  boost::property_tree::xml_writer_settings<char> settings(' ', 2);
-  write_xml_element(os, basic_string<ptree::key_type::value_type>(), pt, -1, settings);
+  write_xml_element(os, 
+    basic_string<ptree::key_type::value_type>(), 
+    pt, 
+    -1, 
+    boost::property_tree::xml_writer_make_settings<string>(' ', 2));
 }
 
 void TF::write(ptree& tfsnode) 
@@ -711,8 +714,11 @@ void TFContainer::write(ostream& os) const
   ptree pt;
   write(pt);
   
-  boost::property_tree::xml_writer_settings<char> settings(' ', 2);
-  write_xml_element(os, basic_string<ptree::key_type::value_type>(), pt, -1, settings);
+  write_xml_element(os, 
+    basic_string<ptree::key_type::value_type>(), 
+    pt, 
+    -1, 
+    boost::property_tree::xml_writer_make_settings<string>(' ', 2));
 }
 
 void TFContainer::write(ptree& pt) const

@@ -16,7 +16,7 @@ XML_LIBS   ?= `xml2-config --libs`
 # directories that must be present for all compiled files. We need the Boost
 # libraries, uncompiled, available online, then links to neoParSA
 BOOST_DIR  ?=/users/kenneth/Boost
-PARSA_ROOT ?=/users/kenneth/Annealer/neoParSA-1
+PARSA_ROOT ?=/users/kenneth/Sandbox/git/neoParSA
 
 PARSA_DIR  = $(PARSA_ROOT)/parsa
 LDLIBS     += -L$(PARSA_ROOT)/build/lib -lparsa
@@ -153,7 +153,7 @@ $(OBJECT:.o=.matlab.o) : $(SOURCE) $(HEADER)
 src/utils.matlab.o: src/utils.cpp $(HEADER)
 	$(R_COMPILER) -c -fPIC -O3 -I$(BOOST_DIR) -I$(MATLAB_INCLUDE) -D MEX src/utils.cpp -o src/utils.matlab.o
 
-matlab: $(OBJECT:.o=.matlab.o) src/utils.matlab.o
+matlab: $(OBJECT:.o=.matlab.o) src/utils.matlab.o matlab/organism_interface_mex.cpp
 	mex -g matlab/organism_interface_mex.cpp $(OBJECT:.o=.matlab.o) src/utils.matlab.o -o matlab/organism_interface_mex.mexa64
 	
 #################################################################################
