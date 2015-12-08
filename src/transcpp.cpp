@@ -18,6 +18,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/version.hpp>
 
 #include <unistd.h>
 #include <libxml/parser.h>
@@ -133,10 +134,18 @@ int main(int argc, char* argv[])
     embryo.write("Output", root_node);
     //boost::property_tree::xml_writer_settings<char> settings(' ', 2);
     //write_xml_element(infile, basic_string<ptree::key_type::value_type>(), pt, -1, settings);
+
+#if BOOST_VERSION / 100 % 1000 < 56
+    write_xml(xmlname, 
+      pt, 
+      std::locale(), 
+      boost::property_tree::xml_writer_make_settings<char>(' ', 2));
+#else
     write_xml(xmlname, 
       pt, 
       std::locale(), 
       boost::property_tree::xml_writer_make_settings<string>(' ', 2));
+#endif
     
 
     /* check that I can reset everything and get the same correct answer */

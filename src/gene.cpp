@@ -11,6 +11,7 @@
 #include <boost/foreach.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/version.hpp>
 
 # define foreach_ BOOST_FOREACH
 
@@ -148,11 +149,19 @@ void Gene::write(ostream& os) const
 {
   ptree pt;
   write(pt);
+#if BOOST_VERSION / 100 % 1000 < 56
+  write_xml_element(os, 
+    basic_string<ptree::key_type::value_type>(), 
+    pt, 
+    -1, 
+    boost::property_tree::xml_writer_make_settings<char>(' ', 2));
+#else
   write_xml_element(os, 
     basic_string<ptree::key_type::value_type>(), 
     pt, 
     -1, 
     boost::property_tree::xml_writer_make_settings<string>(' ', 2));
+#endif
 }
 
 void Gene::write(ptree& pt) const
@@ -498,10 +507,18 @@ void GeneContainer::write(ostream& os)
 {
   ptree pt;
   write(pt);
+#if BOOST_VERSION / 100 % 1000 < 56
+  write_xml_element(os, 
+    basic_string<ptree::key_type::value_type>(), 
+    pt, 
+    -1, 
+    boost::property_tree::xml_writer_make_settings<char>(' ', 2));
+#else
   write_xml_element(os, 
     basic_string<ptree::key_type::value_type>(), 
     pt, 
     -1, 
     boost::property_tree::xml_writer_make_settings<string>(' ', 2));
+#endif
 }
 

@@ -173,7 +173,10 @@ To cleanup all object files, run
 ptranscpp
 ---------
 
-in progress
+ptranscpp must be made with the mpic++ or mpicc compilers. Make sure you
+have MPI installed, then compile with
+
+  make CXX=mpic++ ptranscpp
 
 
 R

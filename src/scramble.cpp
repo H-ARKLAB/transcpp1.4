@@ -15,6 +15,7 @@
 #include <fstream>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/version.hpp>
 
 #include <unistd.h>
 #include <getopt.h>
@@ -110,10 +111,17 @@ int main(int argc, char* argv[])
   //root_node.erase("Input");
   //embryo.write("Input",  root_node);
   //write_xml_element(cout, basic_string<ptree::key_type::value_type>(), output, -1, settings);
-  write_xml(xmlname2, 
-    pt, 
-    std::locale(), 
-    boost::property_tree::xml_writer_make_settings<string>(' ', 2));
+#if BOOST_VERSION / 100 % 1000 < 56
+    write_xml(xmlname2, 
+      pt, 
+      std::locale(), 
+      boost::property_tree::xml_writer_make_settings<char>(' ', 2));
+#else
+    write_xml(xmlname2, 
+      pt, 
+      std::locale(), 
+      boost::property_tree::xml_writer_make_settings<string>(' ', 2));
+#endif
   
 
   return 0;

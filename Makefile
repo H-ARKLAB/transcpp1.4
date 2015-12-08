@@ -13,8 +13,11 @@
 XML_CFLAGS ?= `xml2-config --cflags`
 XML_LIBS   ?= `xml2-config --libs`
 
+USR_FLAGS ?= ""
+
 # directories that must be present for all compiled files. We need the Boost
 # libraries, uncompiled, available online, then links to neoParSA
+
 BOOST_DIR  ?=/users/kenneth/Boost
 PARSA_ROOT ?=/users/kenneth/Sandbox/git/neoParSA
 
@@ -34,9 +37,9 @@ ifdef PARALLEL
 endif
 
 ifdef DEBUG
-  FLAGS = -g -Wall -Wstrict-aliasing=0 -O2 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS)
+  FLAGS = $(USR_FLAGS) -g -O2 -Wall -Wstrict-aliasing=0 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS)
 else
-	FLAGS = -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
+	FLAGS = $(USR_FLAGS) -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
 endif
 
 SOURCE = src/competition.cpp src/sequence.cpp src/score.cpp src/coeffects.cpp \
@@ -57,7 +60,7 @@ transcpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/transcpp.o
 	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/transcpp.o $(XML_LIBS) $(PFLAGS) -o transcpp $(LDLIBS) 
 	
 ptranscpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/ptranscpp.o
-	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/ptranscpp.o $(XML_LIBS) $(PFLAGS) -I/usr/include/mpich-x86_64 -L/usr/lib64/mpich/lib -lmpichcxx -Wl,-rpath -Wl,/usr/lib64/mpich/lib -lmpich -lopa -lmpl -lrt -lpthread -o ptranscpp $(LDLIBS) 
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/ptranscpp.o $(XML_LIBS) $(PFLAGS) -o ptranscpp $(LDLIBS) 
 	
 scramble: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/scramble.o
 	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/scramble.o $(XML_LIBS) $(PFLAGS) -o scramble $(LDLIBS) 
@@ -72,7 +75,7 @@ src/transcpp.o: src/transcpp.cpp
 	$(CXX) -c $(FLAGS) src/transcpp.cpp -o src/transcpp.o
 	
 src/ptranscpp.o: src/ptranscpp.cpp
-	$(CXX) -c $(FLAGS) src/ptranscpp.cpp -DUSE_BOOST -I/usr/include/mpich-x86_64 -L/usr/lib64/mpich/lib -lmpichcxx -Wl,-rpath -Wl,/usr/lib64/mpich/lib -lmpich -lopa -lmpl -lrt -lpthread -o src/ptranscpp.o
+	$(CXX) -c $(FLAGS) src/ptranscpp.cpp -DUSE_BOOST -o src/ptranscpp.o
 	
 src/scramble.o: src/scramble.cpp
 	$(CXX) -c $(FLAGS) src/scramble.cpp -o src/scramble.o

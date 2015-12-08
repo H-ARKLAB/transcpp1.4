@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <cstdlib>
+#include <boost/version.hpp>
 
 int myrandom (int i) { return std::rand()%i;}
 
@@ -317,11 +318,19 @@ void DataTable<T>::write(ostream & os, string node_name, int precision)
 {
   ptree pt;
   write(pt, node_name, precision);
+#if BOOST_VERSION / 100 % 1000 < 56
+  write_xml_element(os, 
+    basic_string<ptree::key_type::value_type>(), 
+    pt, 
+    -1, 
+    boost::property_tree::xml_writer_make_settings<char>(' ', 2));
+#else
   write_xml_element(os, 
     basic_string<ptree::key_type::value_type>(), 
     pt, 
     -1, 
     boost::property_tree::xml_writer_make_settings<string>(' ', 2));
+#endif
 }
 
 template< typename T >
