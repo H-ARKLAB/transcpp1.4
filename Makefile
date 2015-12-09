@@ -58,7 +58,7 @@ transcpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/transcpp.o
 	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/transcpp.o $(XML_LIBS) $(PFLAGS) -o transcpp $(LDLIBS) 
 	
 ptranscpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/ptranscpp.o
-	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/ptranscpp.o $(XML_LIBS) $(PFLAGS) -o ptranscpp $(LDLIBS) 
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/ptranscpp.o $(XML_LIBS) $(PFLAGS) -DUSE_BOOST -o ptranscpp $(LDLIBS) 
 	
 scramble: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/scramble.o
 	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/scramble.o $(XML_LIBS) $(PFLAGS) -o scramble $(LDLIBS) 
