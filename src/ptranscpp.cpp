@@ -10,6 +10,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/version.hpp>
 
 #include <unistd.h>
 #include <getopt.h>
@@ -233,7 +234,7 @@ int main(int argc, char** argv)
     std::locale(), 
     boost::property_tree::xml_writer_make_settings<char>(' ', 2));
 #else
-  write_xml_element(xmlname, 
+  write_xml(xmlname, 
     pt, 
     std::locale(), 
     boost::property_tree::xml_writer_make_settings<string>(' ', 2));
