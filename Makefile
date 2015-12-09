@@ -13,8 +13,6 @@
 XML_CFLAGS ?= `xml2-config --cflags`
 XML_LIBS   ?= `xml2-config --libs`
 
-USR_FLAGS ?= ""
-
 # directories that must be present for all compiled files. We need the Boost
 # libraries, uncompiled, available online, then links to neoParSA
 
