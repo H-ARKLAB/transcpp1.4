@@ -35,9 +35,11 @@ ifdef PARALLEL
 endif
 
 ifdef DEBUG
-  FLAGS = $(USR_FLAGS) -g -O2 -Wall -Wstrict-aliasing=0 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS)
+  FLAGS  = $(USR_FLAGS) -g -O2 -Wall -Wstrict-aliasing=0 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS)
+  RFLAGS = -c -DNDEBUG -fPIC -O2 -g
 else
-	FLAGS = $(USR_FLAGS) -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
+	FLAGS  = $(USR_FLAGS) -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
+	RFLAGS = -c -fPIC -O3
 endif
 
 SOURCE = src/competition.cpp src/sequence.cpp src/score.cpp src/coeffects.cpp \
@@ -117,13 +119,13 @@ R_OBJECT=$(R_SOURCE:.cpp=.o)
 R_HEADER=$(R_SOURCE:.cpp=.h)
 
 $(R_OBJECT) : $(R_SOURCE) $(R_HEADER)
-	$(R_COMPILER) -c -DNDEBUG -fPIC -O3 -I$(R_HOME_DIR)/include -Isrc/ -I$(R_LIB_DIR)/Rcpp/include $(@:.o=.cpp) -o $@
+	$(R_COMPILER) $(RFLAGS) -I$(R_HOME_DIR)/include -Isrc/ -I$(R_LIB_DIR)/Rcpp/include $(@:.o=.cpp) -o $@
 	
 $(OBJECT:.o=.R.o) : $(SOURCE) $(HEADER)
-	$(CXX) -c -fPIC -O3 -I$(BOOST_DIR) $(@:.R.o=.cpp) -o $@
+	$(CXX) $(RFLAGS) -I$(BOOST_DIR) $(@:.R.o=.cpp) -o $@
 	
 src/utils.R.o: src/utils.cpp $(HEADER)
-	$(R_COMPILER) -c -fPIC -O3 -I$(BOOST_DIR) -D R_LIB -I$(R_HOME_DIR)/include -I$(R_LIB_DIR)/Rcpp/include src/utils.cpp -o src/utils.R.o
+	$(R_COMPILER) $(RFLAGS) -I$(BOOST_DIR) -D R_LIB -I$(R_HOME_DIR)/include -I$(R_LIB_DIR)/Rcpp/include src/utils.cpp -o src/utils.R.o
 	
 Rtranscpp: $(R_OBJECT) $(OBJECT:.o=.R.o) src/utils.R.o
 	ar cr Rtranscpp/src/liborganism.a $(OBJECT:.o=.R.o) src/utils.R.o

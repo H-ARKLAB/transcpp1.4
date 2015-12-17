@@ -33,12 +33,15 @@ TF::TF():
   energy(pwm_param_ptr(new Parameter<PWM>)),
   kmax(double_param_ptr(new Parameter<double>)),
   threshold(double_param_ptr(new Parameter<double>)),
-  lambda(double_param_ptr(new Parameter<double>))
+  lambda(double_param_ptr(new Parameter<double>)),
+  pwm_offset(double_param_ptr(new Parameter<double>))
+  
 {
   // initialize all the member variables
   index = 0;
   bsize = 0;
   offset = 0;
+  pwm_offset->set(0);
   double_param_ptr coef(new Parameter<double>());
   coef->setParamName("coef");
   coef->set(0.0);
@@ -55,7 +58,8 @@ TF::TF(ptree& pt, mode_ptr m):
   energy(pwm_param_ptr(new Parameter<PWM>)),
   kmax(double_param_ptr(new Parameter<double>)),
   threshold(double_param_ptr(new Parameter<double>)),
-  lambda(double_param_ptr(new Parameter<double>))
+  lambda(double_param_ptr(new Parameter<double>)),
+  pwm_offset(double_param_ptr(new Parameter<double>))
 {
   mode = m;
   set(pt);
@@ -97,6 +101,16 @@ void TF::set(ptree& pt)
   lambda->setParamName("lambda");
   lambda->setTFName(tfname);
   
+  if (pt.count("pwm_offset") == 0)
+    pwm_offset->set(0);
+  else
+  {
+    ptree& pwm_offset_node = pt.get_child("pwm_offset");
+    pwm_offset->read(pwm_offset_node);
+  }
+  pwm_offset->setParamName("pmw_offset");
+  pwm_offset->setTFName(tfname);
+    
   ptree& pwm_node = pt.get_child("PWM");
   readPWM(pwm_node);
   
@@ -292,6 +306,8 @@ void TF::getParameters(param_ptr_vector& p)
     p.push_back(threshold);
   if (lambda->isAnnealed())
     p.push_back(lambda);
+  if (pwm_offset->isAnnealed())
+    p.push_back(pwm_offset);
   
   int ncoefs = coefs.size();
   for (int i=0; i<ncoefs; i++)
@@ -310,6 +326,7 @@ void TF::getAllParameters(param_ptr_vector& p)
   p.push_back(kmax);
   p.push_back(threshold);
   p.push_back(lambda);
+  p.push_back(pwm_offset);
   
   int ncoefs = coefs.size();
   for (int i=0; i<ncoefs; i++)
@@ -472,11 +489,14 @@ void TF::write(ptree& tfsnode)
   
   int input_type = pwm.getInputType();
   
-  ptree & threshold_node = tfnode.add("threshold     ","");
+  ptree & threshold_node  = tfnode.add("threshold     ","");
   threshold->write(threshold_node, mode->getPrecision());
 
-  ptree & lambda_node    = tfnode.add("lambda        ","");
+  ptree & lambda_node     = tfnode.add("lambda        ","");
   lambda->write(lambda_node, mode->getPrecision());
+  
+  ptree & pwm_offset_node = tfnode.add("pwm_offset    ","");
+  pwm_offset->write(pwm_offset_node, mode->getPrecision());
   
   ptree& coefs_node = tfnode.add("Coefficients", "");
   int ncoefs = coefs.size();

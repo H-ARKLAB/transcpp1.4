@@ -38,9 +38,10 @@ private:
   int       bsize;      // the footprint size of the TF
   int       offset;     // the offset of the motif within a footprint (NOT IMPLEMENTED YET)
                        
-  double_param_ptr kmax;      // true binding affinity confounded with relative protein levels
-  double_param_ptr threshold; // a somewhat arbitrary cutoff to use for calling a binding site
-  double_param_ptr lambda;    // how much a mutation away from consensus effects ddG
+  double_param_ptr kmax;       // true binding affinity confounded with relative protein levels
+  double_param_ptr threshold;  // a somewhat arbitrary cutoff to use for calling a binding site
+  double_param_ptr lambda;     // how much a mutation away from consensus effects ddG
+  double_param_ptr pwm_offset; // the energy offset of a pwm
   
   vector<double_param_ptr> coefs;
   
@@ -68,6 +69,7 @@ public:
   double&        getCoef();
   double         getModifiedCoef();
   double         getLambda();
+  double         getPWMOffset() {return pwm_offset->getValue(); }
   double         getMaxScore() const;
   void           getParameters(param_ptr_vector& p); // pushes parameters onto argument
   void           getAllParameters(param_ptr_vector& p); // pushes parameters onto argument

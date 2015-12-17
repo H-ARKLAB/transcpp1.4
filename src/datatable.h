@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include <cstdlib>
 #include <boost/unordered_map.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -50,11 +51,11 @@ private:
   vector<string> col_names;
   
   // the primary data, using data[rowname][colname]
-  boost::unordered_map<string, boost::unordered_map<string, T> > data;
+  map<string, map<string, T> > data;
   
   // vectorized rows and columns for quick access
-  boost::unordered_map<string, vector<T*> > row_data;
-  boost::unordered_map<string, vector<T*> > col_data;
+  map<string, vector<T*> > row_data;
+  map<string, vector<T*> > col_data;
   
 public:
   // Constructors

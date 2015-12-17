@@ -70,7 +70,7 @@ private:
   bool hasSites(Gene&, TF&);
   void createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
                   int pos, double bsize, double score, char orientation, 
-                  double lambda, double kmax, double maxscore,
+                  double lambda, double offset, double kmax, double maxscore,
                   vector<double>& v, int nmodes);
   
   void trimOverlaps();

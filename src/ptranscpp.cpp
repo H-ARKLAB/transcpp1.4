@@ -144,6 +144,7 @@ int main(int argc, char** argv)
 
   if (mode->getSchedule() == LAM)
   {
+    //cerr << "Annealing with schedule lam" << endl;
     plsa::Param scheParam(docroot);
     annealer_plsa = new pannealer<Organism, plsa, criCountP,
                     parallelFBMove, intervalMix>(embryo, rnd, scheParam, frozenParam,
@@ -165,6 +166,7 @@ int main(int argc, char** argv)
   }
   else if (mode->getSchedule() == EXP)
   {
+    //cerr << "Annealing with schedule exp" << endl;
     expHoldP::Param scheParam(docroot);
     annealer_expHoldP = new pannealer<Organism, expHoldP, criCountP,
                         parallelFBMove, intervalMix>(embryo, rnd, scheParam, frozenParam,

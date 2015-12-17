@@ -812,10 +812,34 @@ random_sequence <- function(n, gc=0.5)
   s     <- sample(bases, size=n, prob=probs, replace=TRUE)
   return(s)
 }
-      
-      
-      
-      
+          
+get_rate_from_seq <- function(seq, model_file)
+{
+  require(Rtranscpp)
+  
+  m <- new(Organism, model_file)
+  s <- m$genes[[1]]
+  s$sequence <- seq
+  m$recalculate()
+  return(m$rate[,1])
+}
+
+get_rate_from_seqs <- function(seqs, model_file)
+{
+  require(Rtranscpp)
+  
+  m <- new(Organism, model_file)
+  s <- m$genes[[1]]
+  
+  out <- c()
+  for (i in seqs)
+  {
+    s$sequence <- i
+    m$recalculate()
+    out <- rbind(out, m$rate[,1])
+  }
+  return(out)
+}
       
       
       

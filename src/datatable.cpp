@@ -51,6 +51,10 @@ DataTable<T>::DataTable(string fname, string node_name, string section)
 
 
 
+
+
+
+
 /*    Getters   */
 
 template< typename T >
@@ -151,7 +155,7 @@ void DataTable<T>::fillNaN()
   for (int i=0; i<nrows; i++)
   {
     string& rowname = row_names[i];
-    boost::unordered_map<string, T>& row = data[rowname];
+    map<string, T>& row = data[rowname];
     for (int j=0; j<ncols; j++)
     {
       string& colname = col_names[j];
@@ -173,7 +177,7 @@ void DataTable<T>::vectorize()
   for (int i=0; i<nrows; i++)
   {
     string& rowname = row_names[i];
-    boost::unordered_map<string, T>& row = data[rowname];
+    map<string, T>& row = data[rowname];
     for (int j=0; j<ncols; j++)
     {
       string& colname = col_names[j];
@@ -200,7 +204,7 @@ void DataTable<T>::permute(string& n, int precision)
   int nrows = row_names.size();
   int ncols = col_names.size();
   
-  boost::unordered_map<string, boost::unordered_map<string, T> > new_data;
+  map<string, map<string, T> > new_data;
   vector<string> new_row_names = row_names;
   vector<string> new_col_names = col_names;
   

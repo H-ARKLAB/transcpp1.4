@@ -178,6 +178,7 @@ void Bindings::createSites(Gene& gene, TF& tf)
   double   kmax      = tf.getKmax();
   double   maxscore  = tf.getMaxScore();
   double   lambda    = tf.getLambda();
+  double   offset    = tf.getPWMOffset();
   
   vector<double>& v = conc[&tf];
   
@@ -190,9 +191,9 @@ void Bindings::createSites(Gene& gene, TF& tf)
     double rscore = t.rscore[k];
     
     if (fscore >= threshold)
-      createSite(tmp_sites, gene, tf, k, bsize, fscore, 'F', lambda, kmax,maxscore,v,nmodes);
+      createSite(tmp_sites, gene, tf, k, bsize, fscore, 'F', lambda, offset,kmax,maxscore,v,nmodes);
     if (rscore >= threshold)
-      createSite(tmp_sites, gene, tf, k, bsize, rscore, 'R', lambda, kmax,maxscore,v,nmodes);
+      createSite(tmp_sites, gene, tf, k, bsize, rscore, 'R', lambda, offset,kmax,maxscore,v,nmodes);
 
   }
   if (!mode->getSelfCompetition())
@@ -221,15 +222,15 @@ void Bindings::add_to_ordered(Gene& gene, TF& tf)
   
 void Bindings::createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
                           int pos, double bsize, double score, char orientation, 
-                          double lambda, double kmax, double maxscore,vector<double>& v, int nmodes)
+                          double lambda, double offset, double kmax, double maxscore,vector<double>& v, int nmodes)
 {
   site_ptr b(new BindingSite);
   b->tf                    = &tf;
   b->orientation           = orientation;
-  b->m                     = pos    - bsize/2;
+  b->m                     = pos  - bsize/2;
   b->n                     = b->m + bsize-1;
   b->score                 = score;
-  b->K_exp_part            = exp((b->score - maxscore)/lambda);
+  b->K_exp_part            = exp((b->score - maxscore)/lambda) + offset;
   double K_exp_part_times_kmax = kmax * b->K_exp_part;
   b->K_exp_part_times_kmax = K_exp_part_times_kmax;
   
@@ -342,8 +343,9 @@ void Bindings::order_sites(Gene& gene)
 
 void Bindings::updateK(Gene& gene, TF& tf)
 {
-  vector<double>&  v    = conc[&tf];
-  double           kmax = tf.getKmax();
+  vector<double>&  v      = conc[&tf];
+  double           kmax   = tf.getKmax();
+  double           offset = tf.getPWMOffset();
   
   site_ptr_vector& tmp_sites = sites[&gene][&tf];
   int nsites = tmp_sites.size();
@@ -360,8 +362,9 @@ void Bindings::updateK(Gene& gene, TF& tf)
 
 void Bindings::updateK(TF& tf)
 {
-  vector<double>&  v    = conc[&tf];
-  double           kmax = tf.getKmax();
+  vector<double>&  v      = conc[&tf];
+  double           kmax   = tf.getKmax();
+  double           offset = tf.getPWMOffset();
   
   int ngenes = genes->size();
   for (int i=0; i<ngenes; i++)
@@ -388,13 +391,14 @@ void Bindings::updateKandLambda(Gene& gene, TF& tf)
   double   kmax     = tf.getKmax();
   double   lambda   = tf.getLambda();
   double   maxscore = tf.getMaxScore();
+  double   offset   = tf.getPWMOffset();
   
   site_ptr_vector& tmp_sites = sites[&gene][&tf];
   int nsites = tmp_sites.size();
   for (int k=0; k<nsites; k++)
   {
     BindingSite* b = tmp_sites[k].get();
-    b->K_exp_part            = exp((b->score - maxscore)/lambda);
+    b->K_exp_part            = exp((b->score - maxscore)/lambda) + offset;
     
     double K_exp_part_times_kmax = kmax * b->K_exp_part;
     
@@ -412,6 +416,7 @@ void Bindings::updateKandLambda(TF& tf)
   double   kmax     = tf.getKmax();
   double   lambda   = tf.getLambda();
   double   maxscore = tf.getMaxScore();
+  double   offset   = tf.getPWMOffset();
   
   int ngenes = genes->size();
   for (int i=0; i<ngenes; i++)
@@ -422,7 +427,7 @@ void Bindings::updateKandLambda(TF& tf)
     for (int k=0; k<nsites; k++)
     {
       BindingSite* b = tmp_sites[k].get();
-      b->K_exp_part            = exp((b->score - maxscore)/lambda);
+      b->K_exp_part            = exp((b->score - maxscore)/lambda) + offset;
       
       double K_exp_part_times_kmax = kmax * b->K_exp_part;
       

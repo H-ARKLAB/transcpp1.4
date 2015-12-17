@@ -175,10 +175,7 @@ void Gene::write(ptree& pt) const
   gene.put("<xmlattr>.promoter",   promoter->getName());
   gene.put("<xmlattr>.weight",     weight);
   gene.put("<xmlattr>.include",    include);
-  bool anneal = sequence->isAnnealed();
-  gene.put("<xmlattr>.anneal", anneal);
-  if (anneal)
-    gene.put("<xmlattr>.sequence", sequence->getValue().getSequenceString());
+  gene.put("<xmlattr>.sequence", sequence->getValue().getSequenceString());
   
   if (scale->getName() != string("default"))
     gene.put("<xmlattr>.scale",    scale->getName());
