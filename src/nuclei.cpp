@@ -362,7 +362,7 @@ void Nuclei::getRDist(Gene& gene, vector<BindingSite*>& sites, int start_idx, in
   
   vector<vector<double> > n_dist;
   n_dist.resize(p.size()+1);
-  for (int i=0; i<n_dist.size(); i++)
+  for (int i=0; i< (int) n_dist.size(); i++)
     n_dist[i].resize(n);
   
   calc_pascal_2D(p, n_dist); 
@@ -371,7 +371,7 @@ void Nuclei::getRDist(Gene& gene, vector<BindingSite*>& sites, int start_idx, in
   {
     out[j] = 0;
     double sum = 0;
-    for (int i=0; i<n_dist.size(); i++)
+    for (int i=0; i< (int) n_dist.size(); i++)
     {
       //cerr << n_dist[i][j] << endl;
       out[j] += n_dist[i][j]*gene.getRate(i);
@@ -448,8 +448,6 @@ void Nuclei::calc_pascal_2D(vector<vector<double> >& in, vector<vector<double> >
   
   for (int k=0; k<n; k++)
   {
-    double sum = 0;
-    
     for (int i=0; i<length; i++)
     {
       ret[i][k] = out[length-1][i][k];

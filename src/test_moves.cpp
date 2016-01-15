@@ -84,37 +84,42 @@ int main(int argc, char* argv[])
     if (param->getType() == "PWM")
     {
       Parameter<PWM>* p = dynamic_cast<Parameter<PWM>* >(param);
-      double rand       = uniDblGen();
-      double delta    = 10*rand - 5;
-      double start_score = embryo.get_score();
       
-      embryo.generateMove(i, delta);
-      embryo.restoreMove(i);
-      
-      if (embryo.get_score() != start_score)
-        error("Restore Failed!");
-      
-      embryo.generateMove(i, delta);
-      double move_score      = embryo.get_score();
-      Bindings move_bindings = *(embryo.getBindings());
-      embryo.ResetAll(i);
-      double reset_score  = embryo.get_score();
-      Bindings reset_bindings = *(embryo.getBindings());
-      embryo.Recalculate();
-      double recalc_score = embryo.get_score();
-      Bindings recalc_bindings = *(embryo.getBindings());
-     
-      if (move_score != reset_score)
+      for (int j=0; j<10; j++)
       {
-        move_bindings.isEqual(reset_bindings);
-        error("Move ("+ to_string_(move_score)+") and ResetAll ("+ to_string_(reset_score)+") gave different answers. Move generation may be broken");
+        double rand       = uniDblGen();
+        double delta    = 10*rand - 5;
+        double start_score = embryo.get_score();
+        
+        embryo.generateMove(i, delta);
+        embryo.restoreMove(i);
+        
+        if (embryo.get_score() != start_score)
+          error("Restore Failed!");
+        
+        embryo.generateMove(i, delta);
+        double move_score      = embryo.get_score();
+        //Bindings move_bindings = *(embryo.getBindings());
+        embryo.ResetAll(i);
+        double reset_score  = embryo.get_score();
+        //Bindings reset_bindings = *(embryo.getBindings());
+        embryo.Recalculate();
+        double recalc_score = embryo.get_score();
+        //Bindings recalc_bindings = *(embryo.getBindings());
+        
+        if (move_score != reset_score)
+        {
+          //move_bindings.isEqual(reset_bindings);
+          error("Move ("+ to_string_(move_score)+") and ResetAll ("+ to_string_(reset_score)+") gave different answers. Move generation may be broken");
+        }
+        if (reset_score != recalc_score)
+        {
+          //reset_bindings.isEqual(recalc_bindings);
+          error("ResetAll ("+ to_string_(reset_score)+") and Recalculate ("+ to_string_(recalc_score)+") gave different answers. ResetAll may be broken");
+        }
+        cerr << ".";
       }
-      if (reset_score != recalc_score)
-      {
-        reset_bindings.isEqual(recalc_bindings);
-        error("ResetAll ("+ to_string_(reset_score)+") and Recalculate ("+ to_string_(recalc_score)+") gave different answers. ResetAll may be broken");
-      }
-      cerr << ".";
+      cerr << endl;
     }
     else
     {

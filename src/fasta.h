@@ -17,6 +17,7 @@
 #include <boost/cstdint.hpp>
 #include <cmath>
 #include <map>
+#include <boost/unordered_map.hpp>
 
 #include "utils.h"
 

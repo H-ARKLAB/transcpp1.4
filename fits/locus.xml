@@ -70,6 +70,7 @@
         <kmax value="3.2919" lim_low="1e-06" lim_high="4" anneal="true" move="Kmax"/>
         <threshold value="0" lim_low="1.710000000000001" lim_high="2" anneal="false" move="Sites"/>
         <lambda value="2.8391" lim_low="0.5" lim_high="5" anneal="true" move="Lambda"/>
+        <pwm_offset value="0" lim_low="-5" lim_high="5" anneal="true" move="Lambda"/>
         <Coefficients>
           <coef value="0.12166" lim_low="0" lim_high="1" anneal="true" move="Promoter"/>
         </Coefficients>

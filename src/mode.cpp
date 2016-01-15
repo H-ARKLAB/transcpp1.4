@@ -40,6 +40,7 @@ Mode::Mode()
   per_nuc          = true;              // report the score per nuc
   profiling        = false;             // if true, just do initial loop and exit
   self_competition = true;              // whether a TF can compete with itself
+  non_specific_k   = 0;                 // adjust K for nonspecific binding energy
   verbose          = 0;                 // how much info to print during running
   num_threads      = 1;                 // if parallel, the number of threads to use
   schedule         = LAM;               // the annealing schhedule to use
@@ -53,6 +54,7 @@ Mode::Mode()
   window      = 500;
   shift       = 50;
   n           = 1;
+  t           = 0;
 }
 
 Mode::Mode(string fname, ptree& pt) { filename = fname; read(pt); }
@@ -164,6 +166,7 @@ void Mode::read(ptree& pt)
   readNode<double>(  mode_node, string("PThresh"),           &p_thresh,           0.0               );
   readNode<double>(  mode_node, string("GCcontent"),         &gc,                 0.5               );
   readNode<double>(  mode_node, string("PenaltyWeight"),     &penalty_weight,     0.0               );
+  readNode<double>(  mode_node, string("NonSpecificK"),      &non_specific_k,     0.0               );
   
   readCompetition(mode_node);
   readScaleData(mode_node);
@@ -198,6 +201,7 @@ void Mode::write(ptree& pt)
   ptree& precision_node          = mode_node.add("Precision        ", "");
   ptree& seed_node               = mode_node.add("Seed             ", "");
   ptree& penalty_weight_node     = mode_node.add("PenaltyWeight    ", "");
+  ptree& non_specific_k_node     = mode_node.add("NonSpecificK    ", "");
 
   occupancy_method_node.put("<xmlattr>.value", occupancy_method);
   score_function_node.put("<xmlattr>.value", score_function);
@@ -212,6 +216,7 @@ void Mode::write(ptree& pt)
   precision_node.put("<xmlattr>.value", precision);
   seed_node.put("<xmlattr>.value", seed_string);
   penalty_weight_node.put("<xmlattr>.value", penalty_weight);
+  non_specific_k_node.put("<xmlattr>.value", non_specific_k);
 
   writeScaleData(mode_node);
 }

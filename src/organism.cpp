@@ -697,7 +697,8 @@ void Organism::ResetAll(int idx)
     nuclei->calcCoeffects(gene);
     nuclei->calcQuenching(gene);
     //nuclei->updateN();
-    nuclei->resizeWindow(gene);
+    if (mode->getCompetition() == true)
+      nuclei->resizeWindow(gene);
     nuclei->updateR(gene);
 
   }
@@ -785,6 +786,8 @@ void Organism::movePWM(int idx)
   TF& tf = master_tfs->getTF(params[idx]->getTFName());
   int ngenes  = master_genes->size();
 
+  //params[idx]->print(cerr);
+  
 #ifdef PARALLEL
   #pragma omp parallel for num_threads(mode->getNumThreads())
   #endif

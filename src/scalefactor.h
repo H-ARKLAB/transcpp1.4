@@ -13,6 +13,7 @@
 #include "mode.h"
 
 #include <map>
+#include <boost/unordered_map.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 

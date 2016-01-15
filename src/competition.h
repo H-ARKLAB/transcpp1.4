@@ -27,11 +27,11 @@ private:
   double_param_ptr specificity; // and exponent that scales how much N affects promoter contact
   double_param_ptr threshold;   // the minimum N to have any probability of promoter contact
   double_param_ptr background;  // the relative probability that no peice of DNA interacts
+  double_param_ptr S; // the free energy contribution of a single activator on DNA
   double_param_ptr interaction_strength;
   
   bool product; // whether T is proportional to the sum or product of Ns
-  // parameters when using product method
-  double_param_ptr S; // the free energy contribution of a single activator on DNA
+  
   
 public:
   // Constructors

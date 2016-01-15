@@ -230,6 +230,59 @@ void Score::sum_slope_squares()
   }
 }
 
+void Score::cc()
+{
+  int ngenes = genes->size();
+  
+  for (int i=0; i<ngenes; i++)
+  {
+    vector<double*>& x  = data[i];
+    vector<double*>& y  = prediction[i];
+    
+    int length = y.size();
+    
+    double sum_x  = 0;
+    double sum_y  = 0;
+    double sum_xx = 0;
+    double sum_yy = 0;
+    double sum_xy = 0;
+    
+    vector<double> xx;
+    vector<double> yy;
+    
+    xx.resize(length);
+    yy.resize(length);
+    
+    for(int j=0; j<length; j++)
+    {
+      xx[i] = (*x[i]) * (*x[i]);
+      yy[i] = (*y[i]) * (*y[i]);
+    }
+    
+    for(int j=0; j<length; j++)
+    {
+      sum_x  += (*x[i]);
+      sum_y  += (*y[i]);
+      sum_xx += xx[i];
+      sum_yy += yy[i];
+      sum_xy += (*x[i]) * (*y[i]);
+    }
+    
+    double nr = (length*sum_xy)-(sum_x*sum_y);
+    
+    double sum_x2 = sum_x * sum_x;
+    double sum_y2 = sum_y * sum_y;
+    
+    double dr_1 = (length * sum_xx) - sum_x2;
+    double dr_2 = (length * sum_yy) - sum_y2;
+    double dr_3 = dr_1 * dr_2;
+    double dr = sqrt(dr_3);
+    double r = (nr / dr);
+
+    scores[i] = r;
+  }
+}
+
 
 /*****************  Weight Functions  *******************************************/
 
@@ -371,6 +424,8 @@ void Score::set(Organism* parent)
     scoreFunc = &Score::arkim;
   else if (mode->getScoreFunction() == "sss")
     scoreFunc = &Score::sum_slope_squares;
+  else if (mode->getScoreFunction() == "cc")
+    scoreFunc = &Score::cc;
   else
   {
     stringstream err;

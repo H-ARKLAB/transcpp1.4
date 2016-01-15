@@ -243,15 +243,12 @@ void Parameter<PWM>::scramble(double rand_uniform)
   node->put("<xmlattr>.type","PSSM");
   
   vector<vector<double> > & pwm = value.getPWM();
-  int length = pwm.size();
   
   int pwmpos = 0;
   foreach_(ptree::value_type& v, *node)
   {
     if (v.first == "position")
     {
-      ptree& pt = (ptree&) v;
-      
       tmp.str("");
   
       for (int i=0; i<4; i++)
@@ -306,13 +303,15 @@ void Parameter<Sequence>::deserialize(void const *buf)
 template<> 
 void Parameter<PWM>::serialize(void *buf) const
 {
-  error("serialize not implemented for parameter of type PWM");
+  value.serialize(buf); 
+  //error("serialize not implemented for parameter of type PWM");
 }
 
 template<> 
 void Parameter<PWM>::deserialize(void const *buf)
 {
-  error("deserialize not implemented for parameter of type PWM");
+  value.deserialize(buf);
+  //error("deserialize not implemented for parameter of type PWM");
 }
 
 
@@ -331,20 +330,9 @@ size_t Parameter<Sequence>::getSize()
 template<> 
 size_t Parameter<PWM>::getSize()
 {
-  error("getSize not implemented for parameter of type PWM");
-  return 0;
+  return value.getSize();
+  //error("getSize not implemented for parameter of type PWM");
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 template< typename T> 
@@ -469,6 +457,7 @@ void Parameter<Sequence>::print(ostream& os)
 template<> 
 void Parameter<PWM>::print(ostream& os)
 {
+  //value.print(os,2);
   vector<vector<double> > & pwm = value.getPWM();
   os << setprecision(4)
      << setw(10) << tf_name

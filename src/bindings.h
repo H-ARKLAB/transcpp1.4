@@ -15,7 +15,6 @@
 #include "datatable.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
 
 using namespace std;
 
@@ -24,9 +23,13 @@ ensure that subgroups and quenching interactions never point to null. This
 may or may not be what we actually want and should be reconsidered in the
 future */
 
-
-typedef boost::unordered_map<Gene*, boost::unordered_map<TF*, site_ptr_vector> > site_map;
-typedef map<Gene*, map<TF*, TFscore> >         scores_map;
+typedef map<TF*, site_ptr_vector>          gene_sites_map;
+typedef boost::shared_ptr<gene_sites_map>  gene_sites_map_ptr;
+typedef map<Gene*, gene_sites_map_ptr>     site_map;
+                                       
+typedef map<TF*, TFscore>                  gene_scores_map;
+typedef boost::shared_ptr<gene_scores_map> gene_scores_map_ptr;
+typedef map<Gene*, gene_scores_map_ptr>    scores_map;
 
 
 class Bindings
@@ -66,12 +69,12 @@ private:
   
   map<TF*, vector<double> > conc;
   
-  bool hasScores(Gene&, TF&);
-  bool hasSites(Gene&, TF&);
+  //bool hasScores(Gene&, TF&);
+  //bool hasSites(Gene&, TF&);
   void createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
                   int pos, double bsize, double score, char orientation, 
                   double lambda, double offset, double kmax, double maxscore,
-                  vector<double>& v, int nmodes);
+                  vector<double>& v, int nmodes, double kns);
   
   void trimOverlaps();
   void trimOverlaps(Gene& gene, TF& tf);
@@ -85,14 +88,14 @@ public:
   vector<BindingSite*>& getFsites(Gene& gene) { return ordered_sites_f[&gene]; }
   vector<BindingSite*>& getRsites(Gene& gene) { return ordered_sites_r[&gene]; }
   site_ptr_vector& getSites(Gene&, TF&);
-  boost::unordered_map<TF*, site_ptr_vector>& getSites(Gene&);
-  TFscore& getScores(Gene& gene, TF& tf) { return scores[&gene][&tf]; }
+  map<TF*, site_ptr_vector>& getSites(Gene&);
+  TFscore& getScores(Gene& gene, TF& tf); 
   
   genes_ptr getGenes()  { return genes ; }
   tfs_ptr getTFs()      { return tfs   ; }
 
   // Setters
-  void setGenes(genes_ptr g)  {genes  = g; }  
+  void setGenes(genes_ptr g);
   void setTFs(tfs_ptr t)      {tfs    = t; }
   void setTFData(table_ptr c) {tfdata = c; }
   void setMode(mode_ptr c)    {mode   = c; }
@@ -112,7 +115,7 @@ public:
   void createScores(Gene&, TF&);  // score a gene for a tf 
   void createSites(Gene&, TF&);          
   
-  void addSite(Gene* g, TF* t, site_ptr b) { sites[g][t].push_back(b); }
+  void addSite(Gene* g, TF* t, site_ptr b);
   
   // Functions for moving
   void saveScores(TF&);

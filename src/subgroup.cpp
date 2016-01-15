@@ -12,7 +12,6 @@
 #include <limits>
 #include <math.h>
 #include <climits>
-#include <boost/unordered_map.hpp>
 
 #define foreach_ BOOST_FOREACH
 
@@ -395,12 +394,15 @@ Subgroups::Subgroups() {}
 
 void Subgroups::clear()
 {
-  groups.clear();
+  int ngenes = genes->size();
+  for (int i=0; i<ngenes; i++)
+    clear(genes->getGene(i));
 }
 
 void Subgroups::clear(Gene& gene)
 {
-  groups[&gene].clear();
+  list<Subgroup>& ggroups = *(groups[&gene]);
+  ggroups.clear();
 }
 
 
@@ -411,13 +413,24 @@ void Subgroups::create(genes_ptr g, tfs_ptr t, bindings_ptr b, mode_ptr m)
   bindings  = b;
   mode      = m;
   
+  int ngenes = genes->size();
+  for (int i=0; i<ngenes; i++)
+  {
+    Gene& gene = genes->getGene(i);
+    gene_groups_ptr ggroups(new list<Subgroup>);
+    gene_groups_ptr saved_ggroups(new list<Subgroup>);
+    
+    groups[&gene]       = ggroups;
+    saved_groups[&gene] = saved_ggroups;
+  }
+  
   update();
 }
 
 void Subgroups::addSites(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gene_sites = bindings->getSites(gene);
-  list<Subgroup>& gene_groups = groups[&gene];
+  map<TF*, site_ptr_vector>& gene_sites = bindings->getSites(gene);
+  list<Subgroup>& gene_groups = *(groups[&gene]);
   
   int ntfs = tfs->size();
   for(int i=0; i<ntfs; i++)
@@ -483,7 +496,8 @@ void Subgroups::update()
 
 void Subgroups::update(Gene& gene)
 {
-  groups[&gene].clear();
+  list<Subgroup>& ggroups = *(groups[&gene]);
+  ggroups.clear();
   addSites(gene);
 }
  
@@ -491,20 +505,13 @@ void Subgroups::update(Gene& gene)
 void Subgroups::calc_f()
 {
   int ngenes = genes->size();
-  
   for (int i=0; i<ngenes; i++)
-  {
-    Gene& gene = genes->getGene(i);
-    list<Subgroup>& gene_groups = groups[&gene];
-    list<Subgroup>::iterator j;
-    for (j=gene_groups.begin(); j != gene_groups.end(); ++j)
-      j->occupancy();
-  }
+    calc_f(genes->getGene(i));
 }
 
 void Subgroups::calc_f(Gene& gene)
 {
-  list<Subgroup>& gene_groups = groups[&gene];
+  list<Subgroup>& gene_groups = *(groups[&gene]);
   list<Subgroup>::iterator i;
   for (i=gene_groups.begin(); i != gene_groups.end(); ++i)
     i->occupancy();
@@ -513,22 +520,30 @@ void Subgroups::calc_f(Gene& gene)
 
 void Subgroups::save()
 {
-  saved_groups = groups;
+  int ngenes = genes->size();
+  for (int i=0; i<ngenes; i++)
+    save(genes->getGene(i));
 }
 
 void Subgroups::save(Gene& gene)
 {
-  saved_groups[&gene] = groups[&gene];
+  list<Subgroup>& gene_groups       = *(groups[&gene]);
+  list<Subgroup>& saved_gene_groups = *(saved_groups[&gene]);
+  saved_gene_groups = gene_groups;
 }
 
 void Subgroups::restore()
 {
-  groups = saved_groups;
+  int ngenes = genes->size();
+  for (int i=0; i<ngenes; i++)
+    restore(genes->getGene(i));
 }
 
 void Subgroups::restore(Gene& gene)
 {
-  groups[&gene] = saved_groups[&gene];
+  list<Subgroup>& gene_groups       = *(groups[&gene]);
+  list<Subgroup>& saved_gene_groups = *(saved_groups[&gene]);
+  gene_groups = saved_gene_groups;
 }
 
 void Subgroups::print(ostream& os)
@@ -544,7 +559,7 @@ void Subgroups::print(ostream& os)
 
 void Subgroups::print(Gene& gene, ostream& os)
 {
-  list<Subgroup>& gene_groups = groups[&gene];
+  list<Subgroup>& gene_groups = *(groups[&gene]);
   int counter = 1;
   list<Subgroup>::iterator i;
   

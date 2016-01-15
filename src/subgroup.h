@@ -89,12 +89,13 @@ public:
 };
 
   
+typedef boost::shared_ptr<list<Subgroup> > gene_groups_ptr;
 class Subgroups
 {
 private:
   //maps gene to subgroup
-  map<Gene*, list<Subgroup> > groups;
-  map<Gene*, list<Subgroup> > saved_groups;
+  map<Gene*, gene_groups_ptr > groups;
+  map<Gene*, gene_groups_ptr > saved_groups;
   
   genes_ptr     genes;
   tfs_ptr       tfs;

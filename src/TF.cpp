@@ -38,9 +38,10 @@ TF::TF():
   
 {
   // initialize all the member variables
-  index = 0;
-  bsize = 0;
+  index  = 0;
+  bsize  = 0;
   offset = 0;
+  Kns    = 0;
   pwm_offset->set(0);
   double_param_ptr coef(new Parameter<double>());
   coef->setParamName("coef");
@@ -72,6 +73,7 @@ void TF::set(ptree& pt)
   tfname     = pt.get<string>("<xmlattr>.name");
   bsize      = pt.get<int>("<xmlattr>.bsize");
   
+  Kns = mode->getNonSpecificK();
   
   // read in coefficients
   ptree& coefs_node = pt.get_child("Coefficients");
@@ -220,7 +222,7 @@ void TF::setCoefs(vector<double> c)
   
   for (int i=0; i<input_size; i++)
   {
-    if (i < coefs.size())
+    if (i < (int) coefs.size())
       coefs[i]->set(c[i]);
     else
     {
@@ -511,6 +513,10 @@ void TF::write(ptree& tfsnode)
   
   
   ptree & pwmnode = tfnode.add("PWM","");
+  pwm.print(cerr, 2);
+  
+  if (energy->isAnnealed())
+    input_type = PSSM;
   
   switch (input_type)
   {

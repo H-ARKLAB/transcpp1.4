@@ -56,6 +56,8 @@ protected:
 
 public:
   
+  virtual ~ParameterInterface() {}
+  
   // Getters
   bool isOutOfBounds() { return out_of_bounds; }
   bool isAnnealed()    { return anneal;        }

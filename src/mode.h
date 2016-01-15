@@ -34,6 +34,7 @@ private:
   double p_thresh;         // for using p-value thresholds for pwms
   double gc;               // the default gc content to use if unspecified in input
   double penalty_weight;   // the weight given to the penalty function
+  double non_specific_k;   // the relative energy of nonspecific binding
   string occupancy_method; // dynamic, combinations, sampling
   string score_function;   // see, chisq, cc, etc
   string scale_data_type;  // what function to use when scaling data
@@ -78,6 +79,7 @@ public:
   double       getPThresh()            { return p_thresh;           }
   double       getGC()                 { return gc;                 }
   double       getPenaltyWeight()      { return penalty_weight;     }
+  double       getNonSpecificK()       { return non_specific_k;     }
   bool         getPerGene()            { return per_gene;           }
   bool         getPerNuc()             { return per_nuc;            }
   bool         getProfiling()          { return profiling;          }

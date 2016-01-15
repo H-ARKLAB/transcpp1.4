@@ -460,7 +460,38 @@ void PWM::score(const vector<int>& s, TFscore &t)
   delete[] out;
 }
 
-  
+size_t PWM::getSize()
+{
+  int n = mat.size()*4 + 1;
+  return n*sizeof(int);
+}
+
+void PWM::serialize(void *buf) const
+{
+  int index = 0;
+  int n = mat.size();
+  int* dest = static_cast<int *>(buf);
+  dest[index++] = n;
+  for (int i=0; i<n; i++)
+  {
+    for (int j=0; j<4; j++)
+      dest[index++] = mat[i][j];
+  }
+}
+      
+void PWM::deserialize(void const *buf)
+{
+  int index = 0;
+  int const * from = static_cast<int const *>(buf);
+  int n = from[index++];
+  for (int i=0; i<n; i++)
+  {
+    for (int j=0; j<4; j++)
+      mat[i][j] = from[index++];
+  }
+  setNscore();
+  calc_max_score();
+}
 
 
 void PWM::print(ostream& os, int precision)

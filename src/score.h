@@ -67,6 +67,7 @@ private:
   void pdiff();
   void rms();
   void arkim();
+  void cc();
   void sum_slope_squares();
   
   

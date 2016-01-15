@@ -25,16 +25,39 @@ void Bindings::clear()
   saved_sites.clear();
 }
 
-boost::unordered_map<TF*, site_ptr_vector>& Bindings::getSites(Gene& gene)
+void Bindings::setGenes(genes_ptr g)
 {
-  return sites[&gene];
+  genes = g;
+  int ngenes = genes->size();
+  for (int i=0; i<ngenes; i++)
+  {
+    Gene& gene = genes->getGene(i);
+    gene_scores_map_ptr gscores(new gene_scores_map);
+    gene_scores_map_ptr saved_gscores(new gene_scores_map);
+    
+    gene_sites_map_ptr gsites(new gene_sites_map);
+    gene_sites_map_ptr saved_gsites(new gene_sites_map);
+    
+    scores[&gene]       = gscores;
+    saved_scores[&gene] = saved_gscores;
+    
+    sites[&gene]       = gsites;
+    saved_sites[&gene] = saved_gsites;
+  }
+}
+    
+map<TF*, site_ptr_vector>& Bindings::getSites(Gene& gene)
+{
+  return *(sites[&gene]);
 }
 
 site_ptr_vector& Bindings::getSites(Gene& gene, TF& tf) 
 {
-  return sites[&gene][&tf];
+  gene_sites_map& gsites = *(sites[&gene]);
+  return gsites[&tf];
 }
 
+/* these functions are broken, but is also never used, so commented out for now
 bool Bindings::hasScores(Gene& gene, TF& tf)
 {
   if (scores.find(&gene) == scores.end())
@@ -57,6 +80,12 @@ bool Bindings::hasSites(Gene& gene, TF& tf)
       return false;
   }
   return true;
+}*/
+
+void Bindings::addSite(Gene* g, TF* t, site_ptr b) 
+{ 
+  gene_sites_map& gsites = *(sites[g]);
+  gsites[t].push_back(b); 
 }
 
 void Bindings::createScores()
@@ -67,6 +96,7 @@ void Bindings::createScores()
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
+    
     for (int j=0; j<ntfs; j++)
     {
       TF& tf = tfs->getTF(j);
@@ -123,11 +153,21 @@ void Bindings::create()
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
+    
+    gene_scores_map& gscores       = *(scores[&gene]);
+    gene_scores_map& saved_gscores = *(saved_scores[&gene]);
+    gene_sites_map&  gsites        = *(sites[&gene]);
+    gene_sites_map&  saved_gsites  = *(saved_sites[&gene]);
+    
     for (int j=0; j<ntfs; j++)
     {
       TF& tf = tfs->getTF(j);
       createScores(gene, tf);
       createSites(gene, tf);
+      
+      saved_gscores[&tf] = gscores[&tf];
+      saved_gsites[&tf]  = gsites[&tf];
+      
     }
     order_sites(gene);
     //for (int j=0; j<ntfs; j++)
@@ -161,16 +201,27 @@ void Bindings::create(Gene& gene)
 // find sites for a particular gene and tf
 void Bindings::createScores(Gene& gene, TF& tf) 
 {
-  scores[&gene][&tf] = tf.score(gene.getSequence());
+  gene_scores_map& gscores = *(scores[&gene]);
+  gscores[&tf] = tf.score(gene.getSequence());
+}
+
+TFscore& Bindings::getScores(Gene& gene, TF& tf) 
+{ 
+  gene_scores_map& gscores = *(scores[&gene]);
+  return gscores[&tf]; 
 }
 
 
 void Bindings::createSites(Gene& gene, TF& tf)
 {
-  site_ptr_vector& tmp_sites = sites[&gene][&tf];
+  gene_sites_map& gsites = *(sites[&gene]);
+  site_ptr_vector& tmp_sites = gsites[&tf];
+  
+  //cerr << gene.getName() << " " << tmp_sites.size() << endl;
   if (tmp_sites.size() != 0) error("you didnt clear tmp_sites!");
   
-  TFscore& t         = scores[&gene][&tf];
+  gene_scores_map& gscores = *(scores[&gene]);
+  TFscore& t         = gscores[&tf];
   int      len       = t.mscore.size();
   int      nmodes    = tf.getNumModes();
   double   threshold = tf.getThreshold();
@@ -179,6 +230,8 @@ void Bindings::createSites(Gene& gene, TF& tf)
   double   maxscore  = tf.getMaxScore();
   double   lambda    = tf.getLambda();
   double   offset    = tf.getPWMOffset();
+  double   kns       = tf.getKns(); 
+  kns = kns+kns*offset;
   
   vector<double>& v = conc[&tf];
   
@@ -191,9 +244,9 @@ void Bindings::createSites(Gene& gene, TF& tf)
     double rscore = t.rscore[k];
     
     if (fscore >= threshold)
-      createSite(tmp_sites, gene, tf, k, bsize, fscore, 'F', lambda, offset,kmax,maxscore,v,nmodes);
+      createSite(tmp_sites, gene, tf, k, bsize, fscore, 'F', lambda, offset,kmax,maxscore,v,nmodes,kns);
     if (rscore >= threshold)
-      createSite(tmp_sites, gene, tf, k, bsize, rscore, 'R', lambda, offset,kmax,maxscore,v,nmodes);
+      createSite(tmp_sites, gene, tf, k, bsize, rscore, 'R', lambda, offset,kmax,maxscore,v,nmodes,kns);
 
   }
   if (!mode->getSelfCompetition())
@@ -204,7 +257,8 @@ void Bindings::createSites(Gene& gene, TF& tf)
 
 void Bindings::add_to_ordered(Gene& gene, TF& tf)
 {
-  site_ptr_vector& tf_sites    = sites[&gene][&tf];
+  gene_sites_map& gsites       = *(sites[&gene]);
+  site_ptr_vector& tf_sites    = gsites[&tf];
   vector<BindingSite*>& fsites = ordered_sites_f[&gene];
   
   int ntfsites = tf_sites.size();
@@ -222,7 +276,8 @@ void Bindings::add_to_ordered(Gene& gene, TF& tf)
   
 void Bindings::createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
                           int pos, double bsize, double score, char orientation, 
-                          double lambda, double offset, double kmax, double maxscore,vector<double>& v, int nmodes)
+                          double lambda, double offset, double kmax, double maxscore,vector<double>& v, 
+                          int nmodes, double kns)
 {
   site_ptr b(new BindingSite);
   b->tf                    = &tf;
@@ -237,7 +292,10 @@ void Bindings::createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
   vector<double>& kv = b->kv;
   kv.resize(nnuc);
   for (int i=0; i<nnuc; i++)
-    kv[i] = K_exp_part_times_kmax * v[i];
+  {
+    double tf_kmax = kmax *v[i];
+    kv[i] = (b->K_exp_part*tf_kmax) / (1 + kns*tf_kmax);
+  }
   
   b->total_occupancy.resize(nnuc);
 
@@ -260,7 +318,8 @@ void Bindings::createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
 
 void Bindings::trimOverlaps(Gene& gene, TF& tf)
 {
-  site_ptr_vector& tf_sites = sites[&gene][&tf];
+  gene_sites_map& gsites = *(sites[&gene]);
+  site_ptr_vector& tf_sites = gsites[&tf];
   
   int nsites = tf_sites.size();
   int i = 0;
@@ -307,7 +366,7 @@ void Bindings::order_sites(Gene& gene)
   
   fsites.clear();
   int ntfs = tfs->size();
-  boost::unordered_map<TF*, site_ptr_vector>& gene_sites = sites[&gene];
+  gene_sites_map& gene_sites = *(sites[&gene]);
   for (int i=0; i<ntfs; i++)
   {
     TF& tf = tfs->getTF(i);
@@ -346,8 +405,11 @@ void Bindings::updateK(Gene& gene, TF& tf)
   vector<double>&  v      = conc[&tf];
   double           kmax   = tf.getKmax();
   double           offset = tf.getPWMOffset();
+  double           kns    = tf.getKns(); 
+  kns = kns+kns*offset;
   
-  site_ptr_vector& tmp_sites = sites[&gene][&tf];
+  gene_sites_map& gsites = *(sites[&gene]);
+  site_ptr_vector& tmp_sites = gsites[&tf];
   int nsites = tmp_sites.size();
   for (int k=0; k<nsites; k++)
   {
@@ -355,8 +417,11 @@ void Bindings::updateK(Gene& gene, TF& tf)
     double K_exp_part_times_kmax = kmax * b->K_exp_part;
     b->K_exp_part_times_kmax = K_exp_part_times_kmax;
     vector<double>& kv = b->kv;
-    for (int j=0; j<nnuc; j++)
-      kv[j] = K_exp_part_times_kmax * v[j];
+    for (int i=0; i<nnuc; i++)
+    {
+      double tf_kmax = kmax *v[i];
+      kv[i] = (b->K_exp_part*tf_kmax) / (1 + kns*tf_kmax);
+    }
   }
 }
 
@@ -365,12 +430,15 @@ void Bindings::updateK(TF& tf)
   vector<double>&  v      = conc[&tf];
   double           kmax   = tf.getKmax();
   double           offset = tf.getPWMOffset();
+  double           kns    = tf.getKns(); 
+  kns = kns+kns*offset;
   
   int ngenes = genes->size();
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    site_ptr_vector& tmp_sites = sites[&gene][&tf];
+    gene_sites_map& gsites = *(sites[&gene]);
+    site_ptr_vector& tmp_sites = gsites[&tf];
     int nsites = tmp_sites.size();
     for (int k=0; k<nsites; k++)
     {
@@ -378,8 +446,11 @@ void Bindings::updateK(TF& tf)
       double K_exp_part_times_kmax = kmax * b->K_exp_part;
       b->K_exp_part_times_kmax = K_exp_part_times_kmax;
       vector<double>& kv = b->kv;
-      for (int j=0; j<nnuc; j++)
-        kv[j] = K_exp_part_times_kmax * v[j];
+      for (int i=0; i<nnuc; i++)
+      {
+        double tf_kmax = kmax *v[i];
+        kv[i] = (b->K_exp_part*tf_kmax) / (1 + kns*tf_kmax);
+      }
     }
   }
 }
@@ -392,8 +463,11 @@ void Bindings::updateKandLambda(Gene& gene, TF& tf)
   double   lambda   = tf.getLambda();
   double   maxscore = tf.getMaxScore();
   double   offset   = tf.getPWMOffset();
+  double   kns      = tf.getKns(); 
+  kns = kns+kns*offset;
   
-  site_ptr_vector& tmp_sites = sites[&gene][&tf];
+  gene_sites_map& gsites = *(sites[&gene]);
+  site_ptr_vector& tmp_sites = gsites[&tf];
   int nsites = tmp_sites.size();
   for (int k=0; k<nsites; k++)
   {
@@ -404,8 +478,11 @@ void Bindings::updateKandLambda(Gene& gene, TF& tf)
     
     b->K_exp_part_times_kmax = K_exp_part_times_kmax;
     vector<double>& kv = b->kv;
-    for (int j=0; j<nnuc; j++)
-      kv[j] = K_exp_part_times_kmax * v[j];
+    for (int i=0; i<nnuc; i++)
+    {
+      double tf_kmax = kmax *v[i];
+      kv[i] = (b->K_exp_part*tf_kmax) / (1 + kns*tf_kmax);
+    }
   }
 }
 
@@ -417,12 +494,15 @@ void Bindings::updateKandLambda(TF& tf)
   double   lambda   = tf.getLambda();
   double   maxscore = tf.getMaxScore();
   double   offset   = tf.getPWMOffset();
+  double   kns      = tf.getKns(); 
+  kns = kns+kns*offset;
   
   int ngenes = genes->size();
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    site_ptr_vector& tmp_sites = sites[&gene][&tf];
+    gene_sites_map& gsites = *(sites[&gene]);
+    site_ptr_vector& tmp_sites = gsites[&tf];
     int nsites = tmp_sites.size();
     for (int k=0; k<nsites; k++)
     {
@@ -433,8 +513,11 @@ void Bindings::updateKandLambda(TF& tf)
       
       b->K_exp_part_times_kmax = K_exp_part_times_kmax;
       vector<double>& kv = b->kv;
-      for (int j=0; j<nnuc; j++)
-        kv[j] = K_exp_part_times_kmax * v[j];
+      for (int i=0; i<nnuc; i++)
+      {
+        double tf_kmax = kmax *v[i];
+        kv[i] = (b->K_exp_part*tf_kmax) / (1 + kns*tf_kmax);
+      }
     }
   }
 }
@@ -465,13 +548,17 @@ void Bindings::saveScores(TF& tf)
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    saved_scores[&gene][&tf] = scores[&gene][&tf];
+    saveScores(gene, tf);
   }
 }
 
 void Bindings::saveScores(Gene& gene, TF& tf)
 {
-  saved_scores[&gene][&tf] = scores[&gene][&tf];
+  gene_scores_map& gscores       = *(scores[&gene]);
+  gene_scores_map& saved_gscores = *(saved_scores[&gene]);
+
+  saved_gscores[&tf] = gscores[&tf];
+
 }
 
 void Bindings::restoreScores(TF& tf)
@@ -480,18 +567,21 @@ void Bindings::restoreScores(TF& tf)
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    scores[&gene][&tf] = saved_scores[&gene][&tf];
+    restoreScores(gene, tf);
   }
 }
 
 void Bindings::restoreScores(Gene& gene, TF& tf)
 {
-  scores[&gene][&tf] = saved_scores[&gene][&tf];
+  gene_scores_map& gscores       = *(scores[&gene]);
+  gene_scores_map& saved_gscores = *(saved_scores[&gene]);
+  gscores[&tf] = saved_gscores[&tf];
 }
 
 void Bindings::updateScores(Gene& gene, TF& tf)
 {
-  scores[&gene][&tf] = tf.score(gene.getSequence());
+  gene_scores_map& gscores = *(scores[&gene]);
+  gscores[&tf] = tf.score(gene.getSequence());
 }
 
 void Bindings::updateScores(TF& tf)
@@ -500,7 +590,7 @@ void Bindings::updateScores(TF& tf)
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    scores[&gene][&tf] = tf.score(gene.getSequence());
+    updateScores(gene, tf);
   }
 }
 
@@ -514,18 +604,20 @@ void Bindings::updateScores()
     for (int j=0; j<ntfs; j++)
     {
       TF& tf = tfs->getTF(j);
-      scores[&gene][&tf] = tf.score(gene.getSequence());
+      updateScores(gene, tf);
     }
   }
 }
 
 void Bindings::updateScores(Gene& gene)
 {
+  gene_scores_map& gscores = *(scores[&gene]);
+  
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
   {
     TF& tf = tfs->getTF(i);
-    scores[&gene][&tf] = tf.score(gene.getSequence());
+    gscores[&tf] = tf.score(gene.getSequence());
   }
 }
 
@@ -582,7 +674,8 @@ void Bindings::eraseTF(Gene& gene, TF& tf)
     rsites.erase(rbegin + rsite.index_in_ordered_r);
   }
   */
-  site_ptr_vector& tf_sites = sites[&gene][&tf];
+  gene_sites_map& gsites = *(sites[&gene]);
+  site_ptr_vector& tf_sites = gsites[&tf];
   tf_sites.clear();
 } 
   
@@ -610,8 +703,9 @@ are in the site_ptr_vector
 void Bindings::verify_order(Gene& gene, TF& tf)
 {
   vector<BindingSite*>& fsites = ordered_sites_f[&gene];                       
-  vector<BindingSite*>& rsites = ordered_sites_r[&gene];                         
-  site_ptr_vector& tf_sites    = sites[&gene][&tf];
+  vector<BindingSite*>& rsites = ordered_sites_r[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
+  site_ptr_vector& tf_sites    = gsites[&tf];
   
   // verify that ever site points to something in the ordered list
   int nsites = tf_sites.size();
@@ -678,8 +772,11 @@ void::Bindings::saveSites(TF& tf)
 }
 
 void::Bindings::saveSites(Gene& gene, TF& tf)
-{
-  saved_sites[&gene][&tf] = sites[&gene][&tf];
+{  
+  gene_sites_map& saved_gsites = *(saved_sites[&gene]);
+  gene_sites_map& gsites       = *(sites[&gene]);
+  
+  saved_gsites[&tf] = gsites[&tf];
 }
 
 void::Bindings::restoreSites(TF& tf)
@@ -702,7 +799,10 @@ void::Bindings::restoreSites(Gene& gene, TF& tf)
   //  //cerr << "verify before restore for " << tf_test.getName() << endl;
   //  verify_order(gene, tf_test);
   //}
-  sites[&gene][&tf] = saved_sites[&gene][&tf];
+  gene_sites_map& saved_gsites = *(saved_sites[&gene]);
+  gene_sites_map& gsites       = *(sites[&gene]);
+  gsites[&tf] = saved_gsites[&tf];
+  //sites[&gene][&tf] = saved_sites[&gene][&tf];
   order_sites(gene); 
   //cerr << "fsites.size() = " << ordered_sites_f[&gene].size() << endl;
   //cerr << "rsites.size() = " << ordered_sites_r[&gene].size() << endl;
@@ -720,29 +820,14 @@ void::Bindings::restoreSites(Gene& gene, TF& tf)
 void Bindings::saveOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
-  
   for (int i=0; i<ngenes; i++)
-  {
-    Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        tfsites[k]->saved_total_occupancy = tfsites[k]->total_occupancy;
-      }
-    }
-  }
+    saveOccupancy(genes->getGene(i));
 }
 
 
 void Bindings::saveOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -760,28 +845,13 @@ void Bindings::saveOccupancy(Gene& gene)
 void Bindings::restoreOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
-  
   for (int i=0; i<ngenes; i++)
-  {
-    Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        tfsites[k]->total_occupancy = tfsites[k]->saved_total_occupancy;
-      }
-    }
-  }
+    restoreOccupancy(genes->getGene(i));
 }
 
 void Bindings::restoreOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -801,28 +871,13 @@ simple fractional occupancy */
 void Bindings::saveEffectiveOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
-  
   for (int i=0; i<ngenes; i++)
-  {
-    Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        tfsites[k]->saved_effective_occupancy = tfsites[k]->effective_occupancy;
-      }
-    }
-  }
+    saveEffectiveOccupancy(genes->getGene(i));
 }
 
 void Bindings::saveEffectiveOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -839,28 +894,17 @@ void Bindings::saveEffectiveOccupancy(Gene& gene)
 void Bindings::restoreEffectiveOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
   
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        tfsites[k]->effective_occupancy = tfsites[k]->saved_effective_occupancy;
-      }
-    }
+    restoreEffectiveOccupancy(gene);
   }
 }
 
 void Bindings::restoreEffectiveOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -877,29 +921,17 @@ void Bindings::restoreEffectiveOccupancy(Gene& gene)
 void Bindings::saveModeOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
   
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        tfsites[k]->saved_effective_occupancy = tfsites[k]->effective_occupancy;
-        tfsites[k]->saved_mode_occupancy      = tfsites[k]->mode_occupancy;
-      }
-    }
+    saveModeOccupancy(gene);
   }
 }
 
 void Bindings::saveModeOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -920,29 +952,17 @@ void Bindings::saveModeOccupancy(Gene& gene)
 void Bindings::restoreModeOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
-  
+
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        tfsites[k]->effective_occupancy = tfsites[k]->saved_effective_occupancy;
-        tfsites[k]->mode_occupancy      = tfsites[k]->saved_mode_occupancy;
-      }
-    }
+    restoreModeOccupancy(gene);
   }
 }
 
 void Bindings::restoreModeOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -963,32 +983,13 @@ void Bindings::restoreModeOccupancy(Gene& gene)
 void Bindings::saveAllOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
-  
   for (int i=0; i<ngenes; i++)
-  {
-    Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        site_ptr b = tfsites[k];
-        b->saved_kv                  = b->kv;
-        b->saved_effective_occupancy = b->effective_occupancy;
-        b->saved_mode_occupancy      = b->mode_occupancy;
-        b->saved_total_occupancy     = b->total_occupancy;
-      }
-    }
-  }
+    saveAllOccupancy(genes->getGene(i));
 }
 
 void Bindings::saveAllOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -1011,32 +1012,13 @@ void Bindings::saveAllOccupancy(Gene& gene)
 void Bindings::restoreAllOccupancy()
 {
   int ngenes = genes->size();
-  int ntfs   = tfs->size();
-  
   for (int i=0; i<ngenes; i++)
-  {
-    Gene& gene = genes->getGene(i);
-    boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
-    for (int j=0; j<ntfs; j++)
-    {
-      TF& tf = tfs->getTF(j);
-      site_ptr_vector& tfsites = gsites[&tf];
-      int nsites = tfsites.size();
-      for (int k=0; k<nsites; k++)
-      {
-        site_ptr b = tfsites[k];
-        b->kv                  = b->saved_kv;
-        b->mode_occupancy      = b->saved_mode_occupancy;
-        b->effective_occupancy = b->saved_effective_occupancy;
-        b->total_occupancy     = b->saved_total_occupancy;
-      }
-    }
-  }
+    restoreAllOccupancy(genes->getGene(i));
 }
 
 void Bindings::restoreAllOccupancy(Gene& gene)
 {
-  boost::unordered_map<TF*, site_ptr_vector>& gsites = sites[&gene];
+  gene_sites_map& gsites = *(sites[&gene]);
   
   int ntfs = tfs->size();
   for (int i=0; i<ntfs; i++)
@@ -1088,14 +1070,14 @@ bool Bindings::isEqual(Bindings& test_bindings)
       int n = test_score.fscore.size();
       for (int k=0; k<n; k++)
       {
-        if (test_score.fscore[k] != score.fscore[k]) warning("fscores not equal");
-        if (test_score.rscore[k] != score.rscore[k]) warning("rscores not equal");
+        if (test_score.fscore[k] != score.fscore[k]) error("fscores not equal");
+        if (test_score.rscore[k] != score.rscore[k]) error("rscores not equal");
       }
     }
-    vector<BindingSite*>& test_sites_f = test_bindings.getFsites(test_gene);
-    vector<BindingSite*>& test_sites_r = test_bindings.getRsites(test_gene);
-    
-    int n = ordered_sites_f.size();
+    //vector<BindingSite*>& test_sites_f = test_bindings.getFsites(test_gene);
+    //vector<BindingSite*>& test_sites_r = test_bindings.getRsites(test_gene);
+    //
+    //int n = ordered_sites_f.size();
     //for (int j=0; j<n; j++)
     //{
     //}
@@ -1226,8 +1208,9 @@ void Bindings::printSites(Gene& gene, TF& tf, ostream& os)
 void Bindings::printSites(Gene& gene, TF& tf, ostream& os, int p, int print_source)
 { 
   int w = p+7;
-  site_ptr_vector& tmp_sites = sites[&gene][&tf];
-  double maxscore   = tf.getMaxScore();
+  gene_sites_map& gsites = *(sites[&gene]);
+  site_ptr_vector& tmp_sites = gsites[&tf];
+  //double maxscore   = tf.getMaxScore();
   int    left_bound = gene.getLeftBound();
   int    nsites     = tmp_sites.size();
   for (int i=0; i<nsites; i++)
@@ -1259,7 +1242,7 @@ void Bindings::printScores(Gene& gene, ostream& os)
   int p = mode->getPrecision();
   int w = p+7;
   
-  map<TF*, TFscore> gscores = scores[&gene];
+  gene_scores_map& gscores = *(scores[&gene]);
   
   int ntfs = tfs->size();
   
@@ -1295,6 +1278,7 @@ void Bindings::printTotalOccupancy(Gene& gene, ostream& os, bool invert)
   int w = p + 7;
   os << setprecision(p);
   
+  gene_sites_map& gsites = *(sites[&gene]);
   int ntfs = tfs->size();
   if (invert == false)
   {
@@ -1306,7 +1290,7 @@ void Bindings::printTotalOccupancy(Gene& gene, ostream& os, bool invert)
     for (int i = 0; i<ntfs; i++)
     {
       TF& tf = tfs->getTF(i);
-      site_ptr_vector& tmp_sites = sites[&gene][&tf];
+      site_ptr_vector& tmp_sites = gsites[&tf];
       int nsites = tmp_sites.size();
       for (int i=0; i<nsites; i++)
       {
@@ -1330,7 +1314,7 @@ void Bindings::printTotalOccupancy(Gene& gene, ostream& os, bool invert)
       for (int i = 0; i<ntfs; i++)
       {
         TF& tf = tfs->getTF(i);
-        site_ptr_vector& tmp_sites = sites[&gene][&tf];
+        site_ptr_vector& tmp_sites = gsites[&tf];
         int nsites = tmp_sites.size();
         for (int i=0; i<nsites; i++)
           os << setw(w) << tmp_sites[i]->total_occupancy[nuc];
@@ -1350,7 +1334,7 @@ void Bindings::printTotalOccupancy(Gene& gene, ostream& os, bool invert)
     for (int i = 0; i<ntfs; i++)
     {
       TF& tf = tfs->getTF(i);
-      site_ptr_vector& tmp_sites = sites[&gene][&tf];
+      site_ptr_vector& tmp_sites = gsites[&tf];
       int nsites = tmp_sites.size();
       for (int i=0; i<nsites; i++)
       {
@@ -1376,8 +1360,9 @@ void Bindings::printEffectiveOccupancy(Gene& gene, ostream& os, bool invert)
   int w = 12;
   os << setprecision(3);
   
+  gene_sites_map& gsites = *(sites[&gene]);
   int ntfs = tfs->size();
-  int ngenes = genes->size();
+  //int ngenes = genes->size();
   if (!invert)
   {
     
@@ -1389,7 +1374,7 @@ void Bindings::printEffectiveOccupancy(Gene& gene, ostream& os, bool invert)
     for (int k=0; k<ntfs; k++)
     {
       TF& tf = tfs->getTF(k);
-      site_ptr_vector& tmp_sites = sites[&gene][&tf];
+      site_ptr_vector& tmp_sites = gsites[&tf];
       int nsites = tmp_sites.size();
       int nmodes = tf.getNumModes();
       for (int i=0; i<nsites; i++)
@@ -1418,7 +1403,7 @@ void Bindings::printEffectiveOccupancy(Gene& gene, ostream& os, bool invert)
       for (int k=0; k<ntfs; k++)
       {
         TF& tf = tfs->getTF(k);
-        site_ptr_vector& tmp_sites = sites[&gene][&tf];
+        site_ptr_vector& tmp_sites = gsites[&tf];
         int nsites = tmp_sites.size();
         int nmodes = tf.getNumModes();
         for (int i=0; i<nsites; i++)
@@ -1443,7 +1428,7 @@ void Bindings::printEffectiveOccupancy(Gene& gene, ostream& os, bool invert)
     for (int k=0; k<ntfs; k++)
     {
       TF& tf = tfs->getTF(k);
-      site_ptr_vector& tmp_sites = sites[&gene][&tf];
+      site_ptr_vector& tmp_sites = gsites[&tf];
       int nsites = tmp_sites.size();
       int nmodes = tf.getNumModes();
       for (int i=0; i<nsites; i++)
@@ -1474,7 +1459,10 @@ void Bindings::printModeOccupancy(Gene& gene, ostream& os, bool invert)
   int w = 12;
   os << setprecision(3);
   int ntfs = tfs->size();
-  int ngenes = genes->size();
+  //int ngenes = genes->size();
+  
+  gene_sites_map& gsites = *(sites[&gene]);
+  
   if (!invert)
   {
     
@@ -1486,7 +1474,7 @@ void Bindings::printModeOccupancy(Gene& gene, ostream& os, bool invert)
     for (int k=0; k<ntfs; k++)
     {
       TF& tf = tfs->getTF(k);
-      site_ptr_vector& tmp_sites = sites[&gene][&tf];
+      site_ptr_vector& tmp_sites = gsites[&tf];
       int nsites = tmp_sites.size();
       int nmodes = tf.getNumModes();
       for (int i=0; i<nsites; i++)
@@ -1515,7 +1503,7 @@ void Bindings::printModeOccupancy(Gene& gene, ostream& os, bool invert)
       for (int k=0; k<ntfs; k++)
       {
         TF& tf = tfs->getTF(k);
-        site_ptr_vector& tmp_sites = sites[&gene][&tf];
+        site_ptr_vector& tmp_sites = gsites[&tf];
         int nsites = tmp_sites.size();
         int nmodes = tf.getNumModes();
         for (int i=0; i<nsites; i++)
@@ -1540,7 +1528,7 @@ void Bindings::printModeOccupancy(Gene& gene, ostream& os, bool invert)
     for (int k=0; k<ntfs; k++)
     {
       TF& tf = tfs->getTF(k);
-      site_ptr_vector& tmp_sites = sites[&gene][&tf];
+      site_ptr_vector& tmp_sites = gsites[&tf];
       int nsites = tmp_sites.size();
       int nmodes = tf.getNumModes();
       for (int i=0; i<nsites; i++)

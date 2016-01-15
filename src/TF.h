@@ -43,6 +43,8 @@ private:
   double_param_ptr lambda;     // how much a mutation away from consensus effects ddG
   double_param_ptr pwm_offset; // the energy offset of a pwm
   
+  double Kns; // the nonspecific binding energy
+  
   vector<double_param_ptr> coefs;
   
   // index is -log10(pval)*precision
@@ -64,6 +66,7 @@ public:
   const string&  getPWMSource() const {return energy->getValue().getSource();}
   int            getPWMLength() const {return energy->getValue().length();   }
   double         getThreshold();
+  double         getKns() {return Kns;}
   int            getBindingSize() const;
   double         getKmax();
   double&        getCoef();

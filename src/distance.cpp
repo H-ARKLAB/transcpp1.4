@@ -13,6 +13,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/ref.hpp>
+#include <boost/unordered_map.hpp>
 
 using namespace std;
 using boost::property_tree::ptree;

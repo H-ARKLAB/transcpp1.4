@@ -78,6 +78,7 @@ void Competition::set(ptree& pt, mode_ptr mode)
   this->mode = mode;
   if (pt.count("Competition") == 0)
   {
+    warning("no competition node: setting values in mode");
     window->set(mode->getWindow());
     shift->set(mode->getShift());
     specificity->set(mode->getN());

@@ -30,12 +30,18 @@ struct QuenchingInteraction
   double   distcoef;
 };
 
+typedef map<TF*, map<TF*, vector<QuenchingInteraction> > > gene_quenches;
+typedef boost::shared_ptr<gene_quenches>                   gene_quenches_ptr;
+
 class QuenchingInteractions
 {
 private:
   // quenches[gene][actor][target][index]
-  map<Gene*, map<TF*, map<TF*, vector<QuenchingInteraction> > > > quenches;
-  map<Gene*, map<TF*, map<TF*, vector<QuenchingInteraction> > > > saved_quenches;
+  /* if we parallelize over genes the map is not safe with openMP. I have to have
+  a map of pointers to maps to prevent the latter from moving around with multiple
+  threads */
+  map<Gene*, gene_quenches_ptr > quenches;
+  map<Gene*, gene_quenches_ptr > saved_quenches;
 
   genes_ptr     genes;
   tfs_ptr       tfs;
@@ -44,7 +50,7 @@ private:
   
   distance_ptr dist;
   
-  bool hasQuenchingInteractions(Gene&, TF& actor, TF& target);
+  //bool hasQuenchingInteractions(Gene&, TF& actor, TF& target);
   void quench_f(vector<double>&,vector<double>&,double);
   
 public:
@@ -90,11 +96,14 @@ struct ModifyingInteraction
   coeffect_ptr coef;
 };
 
+typedef map<TF*, map<TF*, vector<ModifyingInteraction> > > gene_mods;
+typedef boost::shared_ptr<gene_mods>                       gene_mods_ptr;
+
 class ModifyingInteractions
 {
 private:
-  map<Gene*, map<TF*, map<TF*, vector<ModifyingInteraction> > > > mods;
-  map<Gene*, map<TF*, map<TF*, vector<ModifyingInteraction> > > > saved_mods;
+  map<Gene*, gene_mods_ptr > mods;
+  map<Gene*, gene_mods_ptr > saved_mods;
   
   genes_ptr     genes;
   tfs_ptr       tfs;

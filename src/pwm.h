@@ -101,6 +101,10 @@ public:
   double score2pval(double score); // returns the pvalue of a given score
   void   score(const vector<int>& s, TFscore &t);
   
+  size_t getSize();
+  void   serialize(void *buf) const;
+  void   deserialize(void const *buf);
+  
   void print(ostream& os, int precision);
 };
 
