@@ -109,8 +109,8 @@ src/utils.$(CXX).o: src/utils.cpp $(HEADER)
 # this will use the R command to find them
 
 R_COMPILER ?=$(CXX)
-R_LIB_DIR  ?=$(shell R --slave --vanilla -e "cat(paste(strsplit(Sys.getenv('R_LIBS'),':')[[1]][1],'\n',sep=''))")
-R_HOME_DIR ?=$(shell R --slave --vanilla -e "cat(paste(strsplit(Sys.getenv('R_HOME'),':')[[1]][1],'\n',sep=''))")
+R_LIB_DIR  ?=$(shell R --slave --vanilla -e "writeLines(paste(strsplit(Sys.getenv('R_LIBS'),':')[[1]][1],sep=''))")
+R_HOME_DIR ?=$(shell R --slave --vanilla -e "writeLines(paste(strsplit(Sys.getenv('R_HOME'),':')[[1]][1],sep=''))")
 
 R_SOURCE = Rtranscpp/src/r_datatable.cpp Rtranscpp/src/r_defaults.cpp \
 Rtranscpp/src/r_gene.cpp Rtranscpp/src/r_mode.cpp Rtranscpp/src/r_organism.cpp \
