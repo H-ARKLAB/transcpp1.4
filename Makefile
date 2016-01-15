@@ -109,7 +109,7 @@ src/utils.$(CXX).o: src/utils.cpp $(HEADER)
 # this will use the R command to find them
 
 R_COMPILER ?=$(CXX)
-R_LIB_DIR  ?=$(shell R --slave --vanilla -e "writeLines(paste(strsplit(Sys.getenv('R_LIBS'),':')[[1]][1],sep=''))")
+R_LIB_DIR  ?=$(shell R --slave --vanilla -e "writeLines(.libPaths()[1])")
 R_HOME_DIR ?=$(shell R --slave --vanilla -e "writeLines(paste(strsplit(Sys.getenv('R_HOME'),':')[[1]][1],sep=''))")
 
 R_SOURCE = Rtranscpp/src/r_datatable.cpp Rtranscpp/src/r_defaults.cpp \
