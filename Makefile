@@ -36,10 +36,10 @@ endif
 
 ifdef DEBUG
   FLAGS  = $(USR_FLAGS) -g -O2 -Wall -Wstrict-aliasing=0 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
-  RFLAGS = -c -DNDEBUG -fPIC -O2 -g
+  RFLAGS = -c -DNDEBUG -fPIC -O2 -g -I$(BOOST_DIR)
 else
 	FLAGS  = $(USR_FLAGS) -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
-	RFLAGS = -c -fPIC -O3
+	RFLAGS = -c -fPIC -O3 -I$(BOOST_DIR)
 endif
 
 SOURCE = src/subgroup.cpp src/competition.cpp src/sequence.cpp src/score.cpp src/coeffects.cpp \
