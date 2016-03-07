@@ -11,6 +11,7 @@
 
 #include "TF.h"
 #include "gene.h"
+#include "chromatin.h"
 #include "bindingsite.h"
 #include "datatable.h"
 
@@ -37,10 +38,11 @@ class Bindings
 private:
   int nnuc;
   
-  genes_ptr genes;
-  tfs_ptr   tfs;
-  table_ptr tfdata;
-  mode_ptr  mode;
+  genes_ptr     genes;
+  tfs_ptr       tfs;
+  table_ptr     tfdata;
+  mode_ptr      mode;
+  chromatin_ptr chromatin;
   
   vector<string> IDs;
   /* // dont think i need these anymore
@@ -96,9 +98,10 @@ public:
 
   // Setters
   void setGenes(genes_ptr g);
-  void setTFs(tfs_ptr t)      {tfs    = t; }
-  void setTFData(table_ptr c) {tfdata = c; }
-  void setMode(mode_ptr c)    {mode   = c; }
+  void setTFs(tfs_ptr t)             {tfs       = t; }
+  void setTFData(table_ptr c)        {tfdata    = c; }
+  void setMode(mode_ptr c)           {mode      = c; }
+  void setChromatin(chromatin_ptr c) {chromatin = c; }
   
   void create();
   void clear();
@@ -156,6 +159,7 @@ public:
   
   void updateK(Gene&, TF&);
   void updateKandLambda(Gene&, TF&);
+  void updateKandLambda(Gene&);
   
   void saveAllOccupancy(Gene&);
   void restoreAllOccupancy(Gene&);

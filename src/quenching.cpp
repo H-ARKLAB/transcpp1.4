@@ -54,28 +54,36 @@ void QuenchingInteractions
 void QuenchingInteractions
 ::set(Gene& gene, TF& actor, TF& target)
 {
+  site_ptr_vector::iterator aiter;
+  site_ptr_vector::iterator titer;
+  
   site_ptr_vector& actorsites  = bindings->getSites(gene, actor);
   site_ptr_vector& targetsites = bindings->getSites(gene, target);
   
   gene_quenches& gquenches = *(quenches[&gene]);
   vector<QuenchingInteraction>& q = gquenches[&actor][&target];
+
   double max_dist     = dist->getMaxDistance();
-  int    nactors      = actorsites.size();
+  //int    nactors      = actorsites.size();
   int    ntargets     = targetsites.size();
+  int    start = 0;
   
-  for (int i=0; i<nactors; i++)
+  for (aiter=actorsites.begin(); aiter != actorsites.end(); ++aiter)
   {
-    site_ptr actor_ptr  = actorsites[i];
-    int m1 = actor_ptr->m;
-    int n1 = actor_ptr->n;
+    int c = 0; // value used to see if we 
+    BindingSite& actor     = *(*aiter);
+    //site_ptr     actor_ptr = *aiter;
+    int m1 = actor.m;
+    int n1 = actor.n;
     
-    for (int j=0; j<ntargets; j++)
+    // note this only works if sites are ordered! (which they are because we did a linear search on DNA)
+    for (int i=start; (i<ntargets && c!=2); i++)
     {
+      site_ptr     target_ptr = targetsites[i];
+      BindingSite& target     = *target_ptr;
       
-      site_ptr target_ptr = targetsites[j];
-      
-      int m2 = target_ptr->m;
-      int n2 = target_ptr->n;
+      int m2 = target.m;
+      int n2 = target.n;
       double d;
       
       int dm = abs(m1 - n2);
@@ -88,15 +96,26 @@ void QuenchingInteractions
       
       bool  overlapped = (m1 < n2 && m2 < n1);
       double df        = dist->getDistFunc(d);
-      if ( d < max_dist && !overlapped && df > 0)
+      if ( d < max_dist)
       {
-        QuenchingInteraction quench;
-        quench.actor  = actor_ptr;
-        quench.target = target_ptr;
-        quench.distcoef = df;
-        
-        q.push_back(quench);
-        
+        if (c==0) // we found the first site in range
+        {
+          c++; 
+          start = i; // since this is the first site in range, and the next site is farther down, this is the starting point for our next loop
+        }
+        if (!overlapped && df > 0)
+        {
+          QuenchingInteraction quench;
+          quench.actor  = *aiter;
+          quench.target = target_ptr;
+          quench.distcoef = df;
+          
+          q.push_back(quench);
+        }
+      } 
+      else
+      {
+        if (c==1) c++; // we found the last site in range
       }
     }
   }
@@ -200,14 +219,13 @@ void QuenchingInteractions
 void QuenchingInteractions
 ::quench_f(vector<double>& actor_vec, vector<double>& target_vec, double efd)
 {
-  int n = actor_vec.size();
-  for (int i=0; i<n; i++)
+  vector<double>::iterator i;
+  vector<double>::iterator j;
+  //int n = actor_vec.size();
+  for (i = actor_vec.begin(), j = target_vec.begin() ; i != actor_vec.end(); ++i, ++j)
   {
-    double actor_occupancy = actor_vec[i];
-    double reduction = 1 - actor_occupancy * efd;
-    double* current = &target_vec[i];
-    //target_vec[i] *= reduction;
-    *current = *current * reduction;
+    double reduction = 1 - (*i) * efd;
+    (*j) *= reduction;
   }
 }
 
@@ -441,9 +459,9 @@ void ModifyingInteractions
 
   for (int i=0; i<nactors; i++)
   {
+    site_ptr actor_ptr  = actorsites[i];
     for (int j=0; j<ntargets; j++)
     {
-      site_ptr actor_ptr  = actorsites[i];
       site_ptr target_ptr = targetsites[j];
       
       int m1 = actor_ptr->m;

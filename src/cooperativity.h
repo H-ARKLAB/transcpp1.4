@@ -51,6 +51,7 @@ public:
   void   getParameters(param_ptr_vector& p);
   void   getAllParameters(param_ptr_vector& p);
   pair<string,string> getTFs();
+  distance_ptr getDist() { return dist; }
   double distFunc(double d) { return dist->getDistFunc(d); }
   double getK() { return Kcoop->getValue(); }
   bool getHH() { return HH; }
@@ -92,6 +93,7 @@ public:
   coop_pairs   getCoops(string); // returns a pair of the tf this coops with and a pointer to the coop object
   void         getParameters(param_ptr_vector& p);
   void         getAllParameters(param_ptr_vector& p);
+  vector<coop_ptr>& getAllCoops() { return coops; }
   
   // Setters
   void add(coop_ptr c) {coops.push_back(c);}

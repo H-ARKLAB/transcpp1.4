@@ -18,7 +18,7 @@
 #include "TF.h"
 #include "datatable.h"
 #include "score.h"
-
+#include "sequence.h"
 #include "nuclei.h"
 #include "promoter.h"
 #include "parameter.h"
@@ -27,11 +27,13 @@
 #include "scalefactor.h"
 #include "coeffects.h"
 #include "competition.h"
+#include "chromatin.h"
 
 using namespace std;
 
 class   Nuclei;
 class   Score;
+
 typedef boost::shared_ptr<Score>  score_ptr;
 typedef boost::shared_ptr<Nuclei> nuclei_ptr;
 
@@ -51,6 +53,7 @@ private:
   score_ptr         score_class;
   coops_ptr         coops;
   competition_ptr   competition;
+  chromatin_ptr     chromatin;
   
   param_ptr_vector params; 
   param_ptr_vector all_params;
@@ -69,48 +72,48 @@ private:
   double score_out;
   double previous_score_out;
   
-  /*  Move Functions  */
-  void setMoves();
-  typedef void (Organism::*MFP)(int);
-  // just map input string to a move function, used for initialization
-  map<string, MFP> move_map;
-  map<string, MFP> restore_map;
-  
   // the move function that gets called during annealing
-  vector<MFP> moves;
-  vector<MFP> restores;
+  vector<boost::function<void (Organism*)> > moves;
+  vector<boost::function<void (Organism*)> > restores;
+  
+  vector<boost::function<void (Organism*)> > all_moves;
+  vector<boost::function<void (Organism*)> > all_restores; 
+  
+  void setPVectorMoves(vector<boost::function<void (Organism*)> >& mvec, vector<boost::function<void (Organism*)> >& rvec, param_ptr_vector& pvec);
   
   // the move functions
-  // void ResetAll(int); 
-  void moveScores(int);
-  void movePWM(int);
-  void moveSites(int);
-  void moveLambda(int);
-  void moveKmax(int);
-  void moveCoopD(int);
-  void moveKcoop(int);
-  void moveCoef(int);
-  void moveQuenching(int);
-  void moveQuenchingCoef(int);
-  void moveCoeffect(int);
-  void moveCoeffectEff(int);
-  void movePromoter(int);
-  void moveWindow(int);
-  void null_function(int);  
+  // void ResetAll(int);  
+  void moveScores(TF& tf);
+  void movePWM(TF& tf);
+  void moveSites(TF& tf);
+  void moveLambda(TF& tf);
+  void moveKacc();
+  void moveKmax(TF& tf);
+  void moveCoopD();
+  void moveKcoop();
+  void moveCoef(double_param_ptr p);
+  void moveQuenching();
+  void moveQuenchingCoef();
+  void moveCoeffect();
+  void moveCoeffectEff();
+  void movePromoter();
+  void moveWindow();
+  void null_function();  
   
   // the restore functions
-  void restoreScores(int);
-  void restorePWM(int);
-  void restoreSites(int);
-  void restoreLambda(int);
-  void restoreKmax(int);
-  void restoreCoopD(int);
-  void restoreKcoop(int);
-  void restoreCoef(int);
-  void restoreQuenching(int);
-  void restoreQuenchingCoef(int);
-  void restoreCoeffect(int); 
-  void restoreCoeffectEff(int);   
+  void restoreScores(TF& tf);
+  void restorePWM(TF& tf);
+  void restoreSites(TF& tf);
+  void restoreLambda(TF& tf);
+  void restoreKacc();
+  void restoreKmax(TF& tf);
+  void restoreCoopD();
+  void restoreKcoop();
+  void restoreCoef(double_param_ptr p);
+  void restoreQuenching();
+  void restoreQuenchingCoef();
+  void restoreCoeffect(); 
+  void restoreCoeffectEff();   
 
 public:
   // Constructors
@@ -131,6 +134,9 @@ public:
   scale_factors_ptr getScales()         {return scale_factors;  }
   nuclei_ptr        getNuclei()         {return nuclei;         }
   competition_ptr   getCompetition()    {return competition;    }
+  chromatin_ptr     getChromatin()      {return chromatin;      }
+  coops_ptr         getCoops()          {return coops;          }
+  coeffects_ptr     getCoeffects()      {return coeffects;      }
   vector<string>    getIDs()            {return ids;            }
   double*           getPrediction(Gene&,string&);
   double*           getPenalty(Gene& gene);
@@ -141,6 +147,9 @@ public:
   vector<double>&   getN(int gidx);
   vector<double>&   getR(int gidx);
   bindings_ptr      getBindings();
+  param_ptr_vector& getParameters()     {return params;} 
+  param_ptr_vector& getAllParameters()  {return all_params;}
+  int               getNBindings(Gene&);
   
   // Setters
   void populate_nuclei();
@@ -149,14 +158,17 @@ public:
   void addTF(tf_ptr tf) { master_tfs->add(tf); Recalculate(); }
   
   // Methods
+  void setMoves();
   void Recalculate(); 
-  void ResetAll(int); 
+  void ResetAll(); 
   void score();
   void calc_f();
   void scramble();
   void permute(string& table, string& by);
   void checkScale(ostream&);
   void move(int idx);
+  void move_all(int idx);
+  void restore_all(int idx);
   void adjustThresholds(double percent);
 
   iparam_ptr getParam(int idx) {return params[idx];}

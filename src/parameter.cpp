@@ -34,6 +34,18 @@ Parameter<T>::Parameter()
 }
 
 template< typename T> 
+Parameter<T>::Parameter(string name, string move) 
+{
+  anneal        = false;
+  tf_name_set   = false;
+  seed          = 1;
+  param_name    = name;
+  move_func     = move;
+  out_of_bounds = false;
+  setTypeName();
+}
+
+template< typename T> 
 Parameter<T>::Parameter(ptree& pt)
 {
   seed = 1;
@@ -51,6 +63,19 @@ Parameter<T>::Parameter(string name, ptree& pt)
   param_name = name;
   setTypeName();
   read(pt);
+}
+
+// this is the prefered constructor!!!!
+template< typename T> 
+Parameter<T>::Parameter(ptree& pt, string name, string move)
+{
+  seed = 1;
+  node = &pt;
+  setTypeName();
+  read(pt);
+  out_of_bounds = false;
+  param_name = name;
+  move_func  = move;
 }
 
 template< typename T >
@@ -89,6 +114,7 @@ double Parameter<T>::getLimLow() const { return lim_low; }
 template< typename T> 
 void Parameter<T>::set(T v)
 {
+  previous_value = value;
   value = v;
 }
 
@@ -126,16 +152,6 @@ bool Parameter<Sequence>::checkLimits()
 template<> 
 bool Parameter<PWM>::checkLimits()
 {
-  vector<vector<double> > & pwm = value.getPWM();
-  int pwmlen = pwm.size(); 
-  for (int i=0; i<pwmlen; i++)
-  {
-    for (int j=0; j<4; j++)
-    {
-      if (pwm[i][j] > 10 || pwm[i][j] < -10)
-        return true;
-    }
-  }
   return false;
 }
 
@@ -146,6 +162,7 @@ void Parameter<T>::tweak(double delta)
 {
   previous_value = value;
   value += delta;
+  //cerr << "value moved from " << previous_value << " to " << value << endl;
   checkLimits();
 }
 
@@ -181,25 +198,32 @@ void Parameter<Sequence>::tweak(double delta)
 template<> 
 void Parameter<PWM>::tweak(double delta)
 {
+  // we should only ever tweak from a move that is in bounds
+  out_of_bounds = false;
   previous_value = value;
   
   vector<vector<double> > & pwm = value.getPWM();
   int length = pwm.size();
+
+  //for (int i=0; i<length; i++)
+  //  cerr << value.getConsensus()[i];
+  //cerr << endl;
   
   int pos1 = rand_r(&seed) % length;
   int pos2 = rand_r(&seed) % (int) 4;
+  int old_consensus = value.getConsensus()[pos1];
   //cerr << pos2 << endl;
   
   pwm[pos1][pos2] += delta;
-  if ( pwm[pos1][pos2] > 10 || pwm[pos1][pos2] < -10)
-    out_of_bounds = true;
-  else
-    out_of_bounds = false;
-  
-  //cerr << "changing row " << pos1 << " col " << pos2 << " by " << delta << " to " << pwm[pos1][pos2] << endl;
-  
+
+  value.PSSM2PFM(pwm);
+  value.PFM2PSSM();
   value.setNscore();
   value.calc_max_score();
+    
+  int new_consensus = value.getConsensus()[pos1];
+  if (new_consensus != old_consensus)
+    out_of_bounds = true;  
 }
 
 template< typename T> 
@@ -351,8 +375,8 @@ void Parameter<T>::read(ptree& pt)
   node        = &pt;
   tf_name_set = false;
   
-  // get the name of the move function to be used, if not found, call reset all.
-  move_func    = pt.get<string>("<xmlattr>.move",    string("ResetAll"));
+  // the move function is "ResetAll" my default. If it is defined here, override it
+  move_func    = pt.get<string>("<xmlattr>.move", move_func);
   
   /* // need to let parameter get mode pointer 
   if (mode->getVerbose() >= 1 && (move_func == string("ResetAll") || restore_func == string("ResetAll")))

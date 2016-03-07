@@ -113,6 +113,8 @@ public:
   Parameter(string s) { param_name = s; }
   Parameter(ptree& pt);
   Parameter(string, ptree& pt);
+  Parameter(ptree& pt, string name, string move);
+  Parameter(string name, string move);
   
   void read(ptree& pt);
   

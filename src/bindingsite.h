@@ -21,6 +21,7 @@ struct BindingSite
 {
   TF* tf;
   char orientation;
+  int  pos; 
   int  m;
   int  n;
   double score;

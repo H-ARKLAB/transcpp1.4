@@ -231,7 +231,8 @@ void Bindings::createSites(Gene& gene, TF& tf)
   double   lambda    = tf.getLambda();
   double   offset    = tf.getPWMOffset();
   double   kns       = tf.getKns(); 
-  kns = kns+kns*offset;
+  
+  //kns = kns + exp((offset-maxscore)/lambda);
   
   vector<double>& v = conc[&tf];
   
@@ -285,7 +286,19 @@ void Bindings::createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
   b->m                     = pos  - bsize/2;
   b->n                     = b->m + bsize-1;
   b->score                 = score;
-  b->K_exp_part            = exp((b->score - maxscore)/lambda) + offset;
+  b->pos                   = pos;
+  double ddg = maxscore - b->score;
+
+  double multiplier = 1;
+  if (mode->getChromatin())
+  {
+    //int glength = gene.length();
+    double kacc = chromatin->getKacc();
+    vector<double>& acc = chromatin->getAcc(gene);
+    multiplier = exp( -kacc*(1 - acc[pos]));
+  }
+    
+  b->K_exp_part            = exp(-ddg/lambda)*multiplier;
   double K_exp_part_times_kmax = kmax * b->K_exp_part;
   b->K_exp_part_times_kmax = K_exp_part_times_kmax;
   
@@ -404,9 +417,12 @@ void Bindings::updateK(Gene& gene, TF& tf)
 {
   vector<double>&  v      = conc[&tf];
   double           kmax   = tf.getKmax();
-  double           offset = tf.getPWMOffset();
+  //double           offset = tf.getPWMOffset();
   double           kns    = tf.getKns(); 
-  kns = kns+kns*offset;
+  //double        maxscore  = tf.getMaxScore();
+  //double        lambda    = tf.getLambda();
+  
+  //kns = kns + exp((offset-maxscore)/lambda);
   
   gene_sites_map& gsites = *(sites[&gene]);
   site_ptr_vector& tmp_sites = gsites[&tf];
@@ -429,9 +445,12 @@ void Bindings::updateK(TF& tf)
 {
   vector<double>&  v      = conc[&tf];
   double           kmax   = tf.getKmax();
-  double           offset = tf.getPWMOffset();
+  //double           offset = tf.getPWMOffset();
   double           kns    = tf.getKns(); 
-  kns = kns+kns*offset;
+  //double   maxscore  = tf.getMaxScore();
+  //double   lambda    = tf.getLambda();
+  
+  //kns = kns + exp((offset-maxscore)/lambda);
   
   int ngenes = genes->size();
   for (int i=0; i<ngenes; i++)
@@ -455,6 +474,17 @@ void Bindings::updateK(TF& tf)
   }
 }
 
+void Bindings::updateKandLambda(Gene& gene)
+{
+  int ntfs = tfs->size();
+  for (int i=0; i<ntfs; i++)
+  {
+    TF& tf = tfs->getTF(i);
+    updateKandLambda(gene, tf);
+  }
+}
+
+  
 void Bindings::updateKandLambda(Gene& gene, TF& tf)
 {
   vector<double>&     v = conc[&tf];
@@ -462,9 +492,10 @@ void Bindings::updateKandLambda(Gene& gene, TF& tf)
   double   kmax     = tf.getKmax();
   double   lambda   = tf.getLambda();
   double   maxscore = tf.getMaxScore();
-  double   offset   = tf.getPWMOffset();
+  //double   offset   = tf.getPWMOffset();
   double   kns      = tf.getKns(); 
-  kns = kns+kns*offset;
+  
+  //kns = kns + exp((offset-maxscore)/lambda);
   
   gene_sites_map& gsites = *(sites[&gene]);
   site_ptr_vector& tmp_sites = gsites[&tf];
@@ -472,7 +503,16 @@ void Bindings::updateKandLambda(Gene& gene, TF& tf)
   for (int k=0; k<nsites; k++)
   {
     BindingSite* b = tmp_sites[k].get();
-    b->K_exp_part            = exp((b->score - maxscore)/lambda) + offset;
+    
+    double ddg = maxscore - b->score;
+    if (mode->getChromatin())
+    {
+      //int glength = gene.length();
+      double kacc = chromatin->getKacc();
+      vector<double>& acc = chromatin->getAcc(gene);
+      ddg -= kacc * (1 - acc[b->pos]);
+    }
+    b->K_exp_part            = exp(-ddg/lambda);
     
     double K_exp_part_times_kmax = kmax * b->K_exp_part;
     
@@ -493,9 +533,10 @@ void Bindings::updateKandLambda(TF& tf)
   double   kmax     = tf.getKmax();
   double   lambda   = tf.getLambda();
   double   maxscore = tf.getMaxScore();
-  double   offset   = tf.getPWMOffset();
+  //double   offset   = tf.getPWMOffset();
   double   kns      = tf.getKns(); 
-  kns = kns+kns*offset;
+  
+  //kns = kns + exp((offset-maxscore)/lambda);
   
   int ngenes = genes->size();
   for (int i=0; i<ngenes; i++)
@@ -504,10 +545,21 @@ void Bindings::updateKandLambda(TF& tf)
     gene_sites_map& gsites = *(sites[&gene]);
     site_ptr_vector& tmp_sites = gsites[&tf];
     int nsites = tmp_sites.size();
+    
     for (int k=0; k<nsites; k++)
     {
       BindingSite* b = tmp_sites[k].get();
-      b->K_exp_part            = exp((b->score - maxscore)/lambda) + offset;
+      double ddg = maxscore - b->score;
+      double multiplier = 1;
+      if (mode->getChromatin())
+      {
+        //int glength = gene.length();
+        double kacc = chromatin->getKacc();
+        vector<double>& acc = chromatin->getAcc(gene);
+        //cerr << acc[b->pos] << endl;
+        multiplier = exp( -kacc*(1 - acc[b->pos]));
+      }
+      b->K_exp_part = exp(-ddg/lambda)*multiplier;
       
       double K_exp_part_times_kmax = kmax * b->K_exp_part;
       

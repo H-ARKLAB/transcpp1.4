@@ -163,61 +163,26 @@ int main(int argc, char** argv)
 
     if (issteplog)
       annealer_plsa->setStepLog(file, (outprefix + ".steplog").c_str());
-  }
-  else if (mode->getSchedule() == EXP)
-  {
-    //cerr << "Annealing with schedule exp" << endl;
-    expHoldP::Param scheParam(docroot);
-    annealer_expHoldP = new pannealer<Organism, expHoldP, criCountP,
-                        parallelFBMove, intervalMix>(embryo, rnd, scheParam, frozenParam,
-                                                     mixParam, docroot, mpiState);
-    if (0 == mpiState.rank)
+    if (readInitStates)
     {
-      if (iscoollog)
-        annealer_expHoldP->setCoolLog(file, (bname + ".log").c_str());
-      if (isprolix)
-        annealer_expHoldP->setProlix(file, (bname + ".prolix").c_str());
-      if (isverbose)
+      std::string line;
+      std::ifstream is(stateListFile);
+      int i = 0;
+      while (!(std::getline(is,line)).eof())
       {
-        annealer_expHoldP->setMixLog(file, (bname + ".mixlog").c_str());
+        if (mpiState.rank == i)
+        {
+          readStatePrefix = line.c_str();
+          break;
+        }
+        ++i;
       }
-    }
-
-    if (issteplog)
-      annealer_expHoldP->setStepLog(file, (outprefix + ".steplog").c_str());
-  }
-
-  if (readInitStates)
-  {
-    std::string line;
-    std::ifstream is(stateListFile);
-    int i = 0;
-    while (!(std::getline(is,line)).eof())
-    {
-      if (mpiState.rank == i)
-      {
-        readStatePrefix = line.c_str();
-        break;
-      }
-      ++i;
-    }
-    if (readStatePrefix)
-    {
-      if (mode->getSchedule() == LAM)
+      if (readStatePrefix)
         annealer_plsa->readUnifiedInitState(readStatePrefix);
-      else if (mode->getSchedule() == EXP)
-        annealer_expHoldP->readUnifiedInitState(readStatePrefix);
+      else
+        throw std::runtime_error("unable to find state");
+      is.close();
     }
-    else
-    {
-      throw std::runtime_error("unable to find state");
-    }
-    is.close();
-  }
-
-  
-  if (mode->getSchedule() == LAM)
-  {
     if (0 == mpiState.rank)
       cerr << "The energy is " << embryo.get_score() << endl;
     annealer_plsa->loop();
@@ -246,6 +211,45 @@ int main(int argc, char** argv)
   }
   else if (mode->getSchedule() == EXP)
   {
+    //cerr << "Annealing with schedule exp" << endl;
+    expHoldP::Param scheParam(docroot);
+    annealer_expHoldP = new pannealer<Organism, expHoldP, criCountP,
+                        parallelFBMove, intervalMix>(embryo, rnd, scheParam, frozenParam,
+                                                     mixParam, docroot, mpiState);
+    if (0 == mpiState.rank)
+    {
+      if (iscoollog)
+        annealer_expHoldP->setCoolLog(file, (bname + ".log").c_str());
+      if (isprolix)
+        annealer_expHoldP->setProlix(file, (bname + ".prolix").c_str());
+      if (isverbose)
+      {
+        annealer_expHoldP->setMixLog(file, (bname + ".mixlog").c_str());
+      }
+    }
+
+    if (issteplog)
+      annealer_expHoldP->setStepLog(file, (outprefix + ".steplog").c_str());
+    if (readInitStates)
+    {
+      std::string line;
+      std::ifstream is(stateListFile);
+      int i = 0;
+      while (!(std::getline(is,line)).eof())
+      {
+        if (mpiState.rank == i)
+        {
+          readStatePrefix = line.c_str();
+          break;
+        }
+        ++i;
+      }
+      if (readStatePrefix)
+        annealer_expHoldP->readUnifiedInitState(readStatePrefix);
+      else
+        throw std::runtime_error("unable to find state");
+      is.close();
+    }
     if (0 == mpiState.rank)
       cerr << "The energy is " << embryo.get_score() << endl;
     annealer_expHoldP->loop();

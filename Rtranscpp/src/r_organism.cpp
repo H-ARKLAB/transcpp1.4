@@ -3,6 +3,7 @@
 #include "r_organism.h"
 #include "r_datatable.h"
 #include "r_mode.h"
+#include "r_parameter.h"
 
 #define to_string_ boost::lexical_cast<string>
 
@@ -13,6 +14,9 @@ RCPP_EXPOSED_CLASS(ModePtr)
 RCPP_EXPOSED_CLASS(GenePtr)
 RCPP_EXPOSED_CLASS(Defaults)
 RCPP_EXPOSED_CLASS(TFPtr)
+RCPP_EXPOSED_CLASS(DoubleParameterPtr)
+RCPP_EXPOSED_CLASS(PWMParameterPtr)
+RCPP_EXPOSED_CLASS(SeqParameterPtr)
 
 OrganismPtr::OrganismPtr() :
   organism(boost::shared_ptr<Organism>(new Organism())) 
@@ -117,8 +121,88 @@ List OrganismPtr::tfs()
   out.attr("names") = tf_names;
   return out;
 }
+
+List OrganismPtr::parameters()
+{
+  param_ptr_vector params = organism->getAllParameters();
+  int nparams = params.size();
+  List out(nparams);
   
+  for (int i=0; i<nparams; i++)
+  {
+    iparam_ptr param = params[i];
+    if (param->getType() == string("double"))
+      out[i] = DoubleParameterPtr(organism,i);
+    else if (param->getType() == string("PWM"))
+      out[i] = PWMParameterPtr(organism,i);
+    else if (param->getType() == string("Sequence"))
+      out[i] = SeqParameterPtr(organism,i);
+    else
+      error(to_string_("No interface set for parameter of type " + param->getType()));
+  }
+  return out;
+}
+
+List OrganismPtr::parameter_table()
+{
+  param_ptr_vector params = organism->getAllParameters();
+  int nparams = params.size();
+  List out(4);
+  CharacterVector names(nparams);
+  CharacterVector types(nparams);
+  CharacterVector tfs(nparams);
+  LogicalVector   anneal(nparams);
   
+  vector<string> col_names(4);
+  vector<string> row_names(nparams);
+  col_names[0] = "name";
+  col_names[1] = "type";
+  col_names[2] = "tf";
+  col_names[3] = "anneal";
+  
+  for (int i=0; i<nparams; i++)
+  {
+    row_names[i] = to_string_(i+1);
+    iparam_ptr param = params[i];
+    if (param->getType() == string("double"))
+    {
+      DoubleParameterPtr p_ptr(organism,i);
+      names[i]  = (p_ptr.name())[0];
+      types[i]  = (p_ptr.type())[0];
+      tfs[i]    = (p_ptr.TFName())[0];
+      anneal[i] = (p_ptr.getAnneal());
+      
+    }
+    else if (param->getType() == string("PWM"))
+    {
+      PWMParameterPtr p_ptr(organism, i);
+      names[i]  = (p_ptr.name())[0];
+      types[i]  = (p_ptr.type())[0];
+      tfs[i]    = (p_ptr.TFName())[0];
+      anneal[i] = (p_ptr.getAnneal());
+    }
+    else if (param->getType() == string("Sequence"))
+    {
+      SeqParameterPtr p_ptr(organism, i);
+      names[i]  = (p_ptr.name())[0];
+      types[i]  = (p_ptr.type())[0];
+      tfs[i]    = (p_ptr.TFName())[0];
+      anneal[i] = (p_ptr.getAnneal());
+    }
+    else
+      error(to_string_("No interface set for parameter of type " + param->getType()));
+  }
+  out[0] = names;
+  out[1] = types;
+  out[2] = tfs;
+  out[3] = anneal;
+  
+  out.attr("class")     = string("data.frame");
+  out.attr("row.names") = row_names;
+  out.attr("names")     = col_names;
+  return out;
+}
+
 /* return the scaled rate data */
 List OrganismPtr::scaled_rate_data()
 {
@@ -755,26 +839,28 @@ RCPP_MODULE(mod_organism)
   .constructor<string>()
   .constructor<string, string>()
   
-  .property("tf_data", &OrganismPtr::tf_data)
-  .property("rate_data", &OrganismPtr::rate_data)
-  .property("genes", &OrganismPtr::get_genes)
-  .property("tfs", &OrganismPtr::tfs)
-  .property("scaled_rate_data", &OrganismPtr::scaled_rate_data)
-  .property("bindings", &OrganismPtr::bindings)
-  .property("f", &OrganismPtr::f)
-  .property("fa", &OrganismPtr::fa)
-  .property("F", &OrganismPtr::F)
-  .property("mode", &OrganismPtr::mode)
-  .property("R2D", &OrganismPtr::R2D)
-  .property("N2D", &OrganismPtr::N2D)
-  .property("T2D", &OrganismPtr::T2D)
-  .property("rate", &OrganismPtr::rate)
-  .property("scores", &OrganismPtr::scores)
-  .property("score",  &OrganismPtr::score)
-  .property("par_defaults", &OrganismPtr::get_par_defaults)
-  .property("gene_names", &OrganismPtr::get_gene_names)
-  .property("tf_names", &OrganismPtr::get_tf_names)
-  .property("nuc_names", &OrganismPtr::get_nuc_names)
+  .property("tf_data",          &OrganismPtr::tf_data          )
+  .property("rate_data",        &OrganismPtr::rate_data        )
+  .property("genes",            &OrganismPtr::get_genes       , &OrganismPtr::listdummy)
+  .property("tfs",              &OrganismPtr::tfs             , &OrganismPtr::listdummy)
+  .property("scaled_rate_data", &OrganismPtr::scaled_rate_data )
+  .property("bindings",         &OrganismPtr::bindings         )
+  .property("f",                &OrganismPtr::f                )
+  .property("fa",               &OrganismPtr::fa               )
+  .property("F",                &OrganismPtr::F                )
+  .property("mode",             &OrganismPtr::mode            , &OrganismPtr::modedummy)
+  .property("R2D",              &OrganismPtr::R2D              )
+  .property("N2D",              &OrganismPtr::N2D              )
+  .property("T2D",              &OrganismPtr::T2D              )
+  .property("rate",             &OrganismPtr::rate             )
+  .property("scores",           &OrganismPtr::scores           )
+  .property("score",            &OrganismPtr::score            )
+  .property("par_defaults",     &OrganismPtr::get_par_defaults )
+  .property("gene_names",       &OrganismPtr::get_gene_names   )
+  .property("tf_names",         &OrganismPtr::get_tf_names     )
+  .property("nuc_names",        &OrganismPtr::get_nuc_names    )
+  .property("parameters",       &OrganismPtr::parameters      , &OrganismPtr::listdummy)
+  .property("parameter_table",  &OrganismPtr::parameter_table  )
   
   .method("reset_all", &OrganismPtr::reset_all)
   .method("recalculate", &OrganismPtr::recalculate)

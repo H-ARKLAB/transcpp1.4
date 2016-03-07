@@ -17,11 +17,11 @@
 
 
 Coeffect::Coeffect():
-  efficiency(double_param_ptr(new Parameter<double>))
+  efficiency(double_param_ptr(new Parameter<double>("CoeffectEff","CoeffectEff")))
 {}
 
 Coeffect::Coeffect(distances_ptr distances, ptree& pt):
-  efficiency(double_param_ptr(new Parameter<double>))
+  efficiency(double_param_ptr(new Parameter<double>("CoeffectEff","CoeffectEff")))
 { 
   this->distances = distances;
   read(pt); 
@@ -60,7 +60,6 @@ void Coeffect::read(ptree& pt)
   TT = orientation_node.get<bool>("<xmlattr>.TT");
   
   efficiency->read(pt.get_child("efficiency"));
-  efficiency->setParamName("CoeffectEff");
 }
 
 void Coeffect::write(ptree& pt)

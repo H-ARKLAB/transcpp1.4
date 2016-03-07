@@ -44,6 +44,7 @@ private:
   bool   per_nuc;          // report the score per nuc
   bool   profiling;        // if true, just do initial loop and exit
   bool   self_competition; // whether a TF can compete with itself
+  bool   chromatin;        // whether we read in accessibility per gene
   int    verbose;          // how much info to print during running
   int    num_threads;      // if parallel, the number of threads to use
   int    schedule;         // the annealing schhedule to use
@@ -86,6 +87,7 @@ public:
   bool         getCompetition()        { return competition;        }
   bool         getSelfCompetition()    { return self_competition;   }
   bool         getScaleData()          { return scale_data;         }
+  bool         getChromatin()          { return chromatin;          }
   int          getWindow()             { return window;             }
   int          getShift()              { return shift;              }
   int          getNumThreads()         { return num_threads;        }
@@ -110,6 +112,7 @@ public:
   void setCompetition(bool competition)            { this->competition      = competition;        }
   void setSelfCompetition(bool self_competition)   { this->self_competition = self_competition;   }
   void setScaleData(bool scale_data)               { this->scale_data       = scale_data;         }
+  void setChromatin(bool chromatin)                { this->chromatin        = chromatin;          }
   void setWindow(int window)                       { this->window           = window;             }
   void setShift(int shift)                         { this->shift            = shift;              }
   void setNumThreads(int num_threads)              { this->num_threads      = num_threads;        }

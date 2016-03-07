@@ -42,6 +42,7 @@ Nuclei::Nuclei(Organism* parent, tfs_ptr t) :
   promoters   = parent->getPromoters();
   mode        = parent->getMode();
   competition = parent->getCompetition();
+  chromatin   = parent->getChromatin();
   
   competition_mode = mode->getCompetition();
   int ngenes = genes->size();
@@ -62,6 +63,7 @@ void Nuclei::setParent(Organism* parent)
   promoters   = parent->getPromoters();
   mode        = parent->getMode();
   competition = parent->getCompetition();
+  chromatin   = parent->getChromatin();
   
   competition_mode = mode->getCompetition();
 }
@@ -104,6 +106,7 @@ void Nuclei::createBindings()
   bindings->setTFs(tfs);
   bindings->setTFData(tfdata); 
   bindings->setMode(mode); 
+  bindings->setChromatin(chromatin);
   
   int nids = IDs.size();
   for (int i=0; i<nids; i++)

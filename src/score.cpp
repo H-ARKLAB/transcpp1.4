@@ -11,6 +11,7 @@
 
 #include "score.h"
 #include "utils.h"
+#include <boost/bind.hpp>
 
 
 /*****************  Scoring Functions  ******************************************/
@@ -27,6 +28,17 @@ out to be a more useful function */
 void Score::sse()
 {
   int ngenes = genes->size();
+  
+  double penalty = 0;
+  //tfs_ptr tfs = parent->getTFs();
+  //int ntfs = tfs->size();
+  //for (int i=0; i<ntfs; i++)
+  //{
+  //  TF& tf = tfs->getTF(i);
+  //  pwm_param_ptr pwm = tf.getPWMParam();
+  //  double s = pwm->getValue().pval2score(0.001);
+  //  if (s > 0) penalty += s; // penalize a pwm that finds sites more often than 1 in 1000 bp.
+  //}
   
   for (int i=0; i<ngenes; i++)
   {
@@ -66,7 +78,7 @@ void Score::sse()
       double diff = tdata - tpred;
       sse += diff*diff;
     }
-    scores[i] = sse;
+    scores[i] = sse + penalty;
   }
 }
 
@@ -230,58 +242,156 @@ void Score::sum_slope_squares()
   }
 }
 
+// pearsons r-squared
 void Score::cc()
 {
+  double penalty = 0;
+  //tfs_ptr tfs = parent->getTFs();
+  //int ntfs = tfs->size();
+  //for (int i=0; i<ntfs; i++)
+  //{
+  //  TF& tf = tfs->getTF(i);
+  //  pwm_param_ptr pwm = tf.getPWMParam();
+  //  double s = pwm->getValue().pval2score(0.001);
+  //  if (s > 0) penalty += s/100; // penalize a pwm that finds sites more often than 1 in 1000 bp.
+  //}
+  
   int ngenes = genes->size();
+  
+  int n=0;
+  
+  double sum_x  = 0;
+  double sum_y  = 0;
+  double sum_xx = 0;
+  double sum_yy = 0;
+  double sum_xy = 0;
+    
   
   for (int i=0; i<ngenes; i++)
   {
+    //Gene& gene = genes->getGene(i);
+    //double l = (double) gene.length();
+    
     vector<double*>& x  = data[i];
     vector<double*>& y  = prediction[i];
     
     int length = y.size();
-    
-    double sum_x  = 0;
-    double sum_y  = 0;
-    double sum_xx = 0;
-    double sum_yy = 0;
-    double sum_xy = 0;
-    
-    vector<double> xx;
-    vector<double> yy;
-    
-    xx.resize(length);
-    yy.resize(length);
-    
-    for(int j=0; j<length; j++)
-    {
-      xx[i] = (*x[i]) * (*x[i]);
-      yy[i] = (*y[i]) * (*y[i]);
-    }
-    
-    for(int j=0; j<length; j++)
-    {
-      sum_x  += (*x[i]);
-      sum_y  += (*y[i]);
-      sum_xx += xx[i];
-      sum_yy += yy[i];
-      sum_xy += (*x[i]) * (*y[i]);
-    }
-    
-    double nr = (length*sum_xy)-(sum_x*sum_y);
-    
-    double sum_x2 = sum_x * sum_x;
-    double sum_y2 = sum_y * sum_y;
-    
-    double dr_1 = (length * sum_xx) - sum_x2;
-    double dr_2 = (length * sum_yy) - sum_y2;
-    double dr_3 = dr_1 * dr_2;
-    double dr = sqrt(dr_3);
-    double r = (nr / dr);
 
-    scores[i] = r;
+    for(int j=0; j<length; j++)
+    {
+      n++;
+      double tx = (*x[j]);
+      double ty = (*y[j]);
+      //if (ty/l > 1/100) penalty += ty/l - 1/100;
+      sum_x  += tx;
+      sum_y  += ty;
+      sum_xx += tx*tx;
+      sum_yy += ty*ty;
+      sum_xy += tx*ty;
+    }
   }
+  
+  double nr = (n*sum_xy)-(sum_x*sum_y);
+  
+  double sum_x2 = sum_x * sum_x;
+  double sum_y2 = sum_y * sum_y;
+  
+  double dr_1 = (n * sum_xx) - sum_x2;
+  double dr_2 = (n * sum_yy) - sum_y2;
+  double dr_3 = dr_1 * dr_2;
+  double dr = sqrt(dr_3);
+  double r = (nr / dr);
+  
+  if (r < 0)    r = 0;
+  if (std::isnan(r)) r = 0;
+  
+  score = 1-r + penalty;
 }
+
+bool sort_on_other_vector(int a, int b, vector<double*>& v) {
+  return (*(v[a]) > *(v[b]));
+}
+  
+//spearman rho
+// WARNING: this is not an efficient algorithm, so be careful when using it on 
+// lots of data points
+void Score::rho()
+{
+  int ngenes = genes->size();
+  vector<double*> all_data;
+  vector<double*> all_fit;
+  int length = data[0].size();
+  all_data.resize(ngenes*length);
+  all_fit.resize(ngenes*length);
+  
+  double penalty = 0;
+  int idx = 0;
+  for (int i=0; i<ngenes; i++)
+  {
+    Gene& gene = genes->getGene(i);
+    double l = (double) gene.length();
+    for (int j=0; j<length; j++)
+    {
+      all_data[idx] = data[i][j];
+      all_fit[idx]  = prediction[i][j];
+      if (l / *(all_fit[idx]) > 50) penalty += *(all_fit[idx]) / l - 1/50;
+      idx++;
+    }
+  }
+  
+  length = all_data.size();
+  vector<int> data_index(length, 0);
+  vector<int> fit_index(length, 0);
+  vector<int> data_rank(length, 0);
+  vector<int> fit_rank(length, 0);
+  
+  for (int i=0; i<length; i++)
+  {
+    data_index[i] = i;
+    fit_index[i] = i;
+  }
+  
+  sort(data_index.begin(), data_index.end(), bind(&sort_on_other_vector, _1, _2, boost::ref(all_data)));
+  sort(fit_index.begin(), fit_index.end(), bind(&sort_on_other_vector, _1, _2, boost::ref(all_fit)));
+  
+  int current = 1;
+  data_rank[data_index[0]] = current;
+  for (int i = 1; i < length; i++) {
+    if (all_data[data_index[i]] != all_data[data_index[i - 1]]) {
+      current++;
+    }
+    data_rank[data_index[i]] = current;
+  }
+  
+  current = 1;
+  fit_rank[fit_index[0]] = current;
+  for (int i = 1; i < length; i++) {
+    if (all_fit[fit_index[i]] != all_fit[fit_index[i - 1]]) {
+      current++;
+    }
+    fit_rank[fit_index[i]] = current;
+  }
+  
+  
+   
+  double dsquared = 0;
+  for (int i = 0; i < length; i++) {
+    //cerr << setw(20) << data_rank[i]
+    //     << setw(20) << fit_rank[i];
+    double diff = fit_rank[i] - data_rank[i];
+    //cerr << setw(20) << diff;
+    dsquared += diff*diff;
+    //cerr << setw(20) << dsquared << endl;
+  }
+  
+  double l = (double) length;
+  score = (6*dsquared)/(l*(l*l-1)) + penalty;
+}
+          
+  
+  
+    
+    
 
 
 /*****************  Weight Functions  *******************************************/
@@ -377,6 +487,7 @@ Score::Score(Organism* parent) { set(parent); }
 
 void Score::set(Organism* parent)
 {
+  this->parent = parent;
   mode  = parent->getMode();
   genes = parent->getGenes();
   ids   = parent->getIDs();
@@ -426,6 +537,8 @@ void Score::set(Organism* parent)
     scoreFunc = &Score::sum_slope_squares;
   else if (mode->getScoreFunction() == "cc")
     scoreFunc = &Score::cc;
+  else if (mode->getScoreFunction() == "rho")
+    scoreFunc = &Score::rho;
   else
   {
     stringstream err;
@@ -512,6 +625,9 @@ double Score::getScore()
   
   (this->*scoreFunc)();
     
+  if (scoreFunc == &Score::cc) return score;
+  if (scoreFunc == &Score::rho) return score;
+  
   for (int i=0; i<ngenes; i++)
   {
     Gene& gene = genes->getGene(i);

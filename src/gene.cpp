@@ -93,6 +93,11 @@ void Gene::getParameters(param_ptr_vector& p)
     p.push_back(sequence);
 }
 
+void Gene::getAllParameters(param_ptr_vector& p)
+{
+  p.push_back(sequence);
+}
+
 
 /*    Setters   */
 
@@ -243,6 +248,13 @@ void GeneContainer::getParameters(param_ptr_vector& p)
   int ngenes = genes.size();
   for (int i=0; i<ngenes; i++)
     genes[i]->getParameters(p);
+}
+
+void GeneContainer::getAllParameters(param_ptr_vector& p)
+{
+  int ngenes = genes.size();
+  for (int i=0; i<ngenes; i++)
+    genes[i]->getAllParameters(p);
 }
 
 /*    I/O    */

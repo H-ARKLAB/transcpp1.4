@@ -76,6 +76,7 @@ public:
   double         getMaxScore() const;
   void           getParameters(param_ptr_vector& p); // pushes parameters onto argument
   void           getAllParameters(param_ptr_vector& p); // pushes parameters onto argument
+  bool           ncoops() { return coops.size(); } // used to check if this ever cooperates
   bool           checkCoops(TF*, char, char); // check if this cooperates with tf
   coop_ptr       getCoop(TF*);
   bool           neverActivates();
@@ -84,6 +85,7 @@ public:
   int            getNumModes() { return coefs.size(); }
   int            getIndex()    { return index; }
   
+  vector<double_param_ptr>& getCoefPtrs() {return coefs; }
   double_param_ptr getThresholdParam() { return threshold; }
   pwm_param_ptr    getPWMParam()       { return energy;    }
   

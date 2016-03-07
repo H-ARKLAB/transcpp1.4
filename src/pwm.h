@@ -48,6 +48,7 @@ private:
   int input_type;
   // the underlying matrix
   vector<vector<double> > mat;
+  vector<int> consensus;
   
   /* the observed total counts at each position,
   necessary for backwards converstion */
@@ -62,6 +63,7 @@ private:
 
   // private methods
   void subscore(const vector<int> & s, double * out);
+  
   
 public:
   // constructors
@@ -83,6 +85,7 @@ public:
   double getMaxScore()  { return maxscore; }
   int    length()       { return mat.size(); }
   int    getInputType() { return input_type; }
+  vector<int>& getConsensus() { return consensus; }
   vector<vector<double> >& getPWM(); // efficient, return reference to pwm
   vector<vector<double> >  getPWM(int type); // return a copy, for conveneince, not inner loop
 

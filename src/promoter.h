@@ -51,6 +51,7 @@ public:
   void    getParameters(param_ptr_vector& p);
   void    getAllParameters(param_ptr_vector& p);
   double  getRate(double M) { return rateFunc(M); }
+  map<string, double_param_ptr>& getParamMap() { return params; }
   
   // Setters
   void setMode(mode_ptr mode) { this->mode = mode; }

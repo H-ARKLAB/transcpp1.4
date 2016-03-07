@@ -67,6 +67,7 @@ public:
   string getName() { return(name); }
   void   getParameters(param_ptr_vector& p);
   void   getAllParameters(param_ptr_vector& p);
+  map<string, double_param_ptr> getParams() { return params; }
   
   void setParam(string, double);
   void setDistFunc(string funcname);

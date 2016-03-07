@@ -46,6 +46,7 @@ Mode::Mode()
   schedule         = LAM;               // the annealing schhedule to use
   precision        = 16 ;               // the precision of printed numbers in output
   penalty_weight   = 0 ;                // by default dont use penalty
+  chromatin        = false;             // dont read in chromatin by default
  
   seed = 1000; // the seed after processing
   
@@ -162,6 +163,7 @@ void Mode::read(ptree& pt)
   readNode<bool>(    mode_node, string("PerNuc"),            &per_nuc,            false             );
   readNode<bool>(    mode_node, string("Profiling"),         &profiling,          false             );
   readNode<bool>(    mode_node, string("SelfCompetition"),   &self_competition,   true              );
+  readNode<bool>(    mode_node, string("Chromatin"),         &chromatin,          false             );
   readNode<double>(  mode_node, string("MinData"),           &min_data,           0.0               );
   readNode<double>(  mode_node, string("PThresh"),           &p_thresh,           0.0               );
   readNode<double>(  mode_node, string("GCcontent"),         &gc,                 0.5               );
@@ -201,7 +203,8 @@ void Mode::write(ptree& pt)
   ptree& precision_node          = mode_node.add("Precision        ", "");
   ptree& seed_node               = mode_node.add("Seed             ", "");
   ptree& penalty_weight_node     = mode_node.add("PenaltyWeight    ", "");
-  ptree& non_specific_k_node     = mode_node.add("NonSpecificK    ", "");
+  ptree& non_specific_k_node     = mode_node.add("NonSpecificK     ", "");
+  ptree& chromatin_node          = mode_node.add("Chromatin        ", "");
 
   occupancy_method_node.put("<xmlattr>.value", occupancy_method);
   score_function_node.put("<xmlattr>.value", score_function);
@@ -217,6 +220,7 @@ void Mode::write(ptree& pt)
   seed_node.put("<xmlattr>.value", seed_string);
   penalty_weight_node.put("<xmlattr>.value", penalty_weight);
   non_specific_k_node.put("<xmlattr>.value", non_specific_k);
+  chromatin_node.put("<xmlattr>.value", chromatin);
 
   writeScaleData(mode_node);
 }

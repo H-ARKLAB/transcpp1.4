@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
   Organism embryo(input_node, mode);
   
   unirand48 rnd;
-  unsigned int seed = mode->getSeed();
+  //unsigned int seed = mode->getSeed();
   
   cerr << endl;
   
@@ -83,8 +83,6 @@ int main(int argc, char* argv[])
     
     if (param->getType() == "PWM")
     {
-      Parameter<PWM>* p = dynamic_cast<Parameter<PWM>* >(param);
-      
       for (int j=0; j<10; j++)
       {
         double rand       = uniDblGen();
@@ -92,19 +90,29 @@ int main(int argc, char* argv[])
         double start_score = embryo.get_score();
         
         embryo.generateMove(i, delta);
+        while(embryo.get_score() == numeric_limits<double>::max())
+          embryo.generateMove(i, delta);
+        
+        
         embryo.restoreMove(i);
         
+       
         if (embryo.get_score() != start_score)
-          error("Restore Failed!");
-        
+          error("Starting score was " + to_string_(start_score) + " but restore gave " + to_string_(embryo.get_score()));
+
         embryo.generateMove(i, delta);
-        double move_score      = embryo.get_score();
+        while(embryo.get_score() == numeric_limits<double>::max())
+          embryo.generateMove(i, delta);
+        double  move_score      = embryo.get_score();
+        //cerr << "move: " << move_score << endl;
         //Bindings move_bindings = *(embryo.getBindings());
-        embryo.ResetAll(i);
+        embryo.ResetAll();
         double reset_score  = embryo.get_score();
+        //cerr << "reset: " << reset_score << endl;
         //Bindings reset_bindings = *(embryo.getBindings());
         embryo.Recalculate();
         double recalc_score = embryo.get_score();
+        //cerr << "recalc: " << recalc_score << endl;
         //Bindings recalc_bindings = *(embryo.getBindings());
         
         if (move_score != reset_score)
@@ -138,10 +146,14 @@ int main(int argc, char* argv[])
         double pmax     = lim_high - value;
         double pmin     = lim_low - value;
         
+        //cerr << "range: " << pmin << "-" << pmax << endl;
         double start_score = embryo.get_score();
         
         double rand     = uniDblGen();
         double delta    = (pmax - pmin)*rand + pmin;
+        
+        //cerr << "value: " << value << endl;
+        //cerr << "delta: " << delta << endl;
         
         
         // check to see if restore is working
@@ -154,23 +166,28 @@ int main(int argc, char* argv[])
         
         // check to see that the move gives the same score as reset all and recalculate
         embryo.generateMove(i, delta);
+        if (p->isOutOfBounds())
+          error("Parameter ("+to_string_(value+delta)+") is out of bounds ("+to_string_(lim_low)+","+to_string_(lim_high)+"). Check move generation in this file!");
         double move_score      = embryo.get_score();
-        Bindings move_bindings = *(embryo.getBindings());
-        embryo.ResetAll(i);
+        //cerr << "move: " << move_score << endl;
+        //Bindings move_bindings = *(embryo.getBindings());
+        embryo.ResetAll();
         double reset_score  = embryo.get_score();
-        Bindings reset_bindings = *(embryo.getBindings());
+        //cerr << "reset: " << reset_score << endl;
+        //Bindings reset_bindings = *(embryo.getBindings());
         embryo.Recalculate();
         double recalc_score = embryo.get_score();
-        Bindings recalc_bindings = *(embryo.getBindings());
+        //cerr << "recalc: " << recalc_score << endl;
+        //Bindings recalc_bindings = *(embryo.getBindings());
        
         if (move_score != reset_score)
         {
-          move_bindings.isEqual(reset_bindings);
+          //move_bindings.isEqual(reset_bindings);
           error("Move ("+ to_string_(move_score)+") and ResetAll ("+ to_string_(reset_score)+") gave different answers. Move generation may be broken");
         }
         if (reset_score != recalc_score)
         {
-          reset_bindings.isEqual(recalc_bindings);
+          //reset_bindings.isEqual(recalc_bindings);
           error("ResetAll ("+ to_string_(reset_score)+") and Recalculate ("+ to_string_(recalc_score)+") gave different answers. ResetAll may be broken");
         }
         

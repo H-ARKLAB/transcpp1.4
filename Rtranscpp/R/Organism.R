@@ -100,6 +100,35 @@ plot.Rcpp_Organism <- function(object, type="rate", setdim=TRUE, ...)
   par(oldpar)
 }
 
+plot_points <- function(object, setdim, opts)
+{
+  rate <- as.numeric(as.matrix(object$rate))
+  data <- as.numeric(as.matrix(object$scaled_rate_data))
+
+  if (setdim) par(mfrow=c(1,1))
+  
+  mrate <- max(rate)
+  mdata <- max(data)
+  ylim <- c(0, mrate*1.06)
+  xlim <- c(0, mdata*1.06)
+  ylab <- "fit"
+  xlab <- "data"
+  cols <- c('black')
+  
+  if (!is.null(opts[["xlim"]]))
+    xlim = opts[["xlim"]]
+  if (!is.null(opts[["ylim"]]))
+    ylim = opts[["ylim"]]
+  if (!is.null(opts[["xlab"]]))
+    xlab = opts[["xlab"]]
+  if (!is.null(opts[["ylab"]]))
+    ylab = opts[["ylab"]]
+  if (!is.null(opts[["col"]]))
+  {
+    cols = opts[['col']]
+    opts[['col']] <- NULL
+  }
+}
 
 plot_rate <- function(object, setdim, opts)
 {
@@ -135,7 +164,7 @@ plot_rate <- function(object, setdim, opts)
   }
   if (length(cols) <2)
     cols <- rep(cols[1],2)
-  print(gnames)
+
   for (i in gnames)
   {
     y1 <- data[[i]]
@@ -775,12 +804,17 @@ plot_border <- function(o, gene)
   mneg <- m
   mpos[mpos<0] <- 0
   mneg[mneg>0] <- 0
+  mpos <- mpos/2.55
+  mneg <- mneg/2.55
   
   ymin <- min(colSums(mneg))
   ymax <- max(colSums(mpos))
   
+  lim <- max(abs(ymin),ymax)
+  lim <- lim+0.04*lim
+  
   plot.new()
-  plot.window(xlim=c(35.5,92.5),ylim=c(ymin,ymax), xaxs='i', yaxs='i', bty='o')
+  plot.window(xlim=c(35.5,92.5),ylim=c(-lim,lim), xaxs='i', yaxs='i', bty='o')
   axis(1, tck=0.02)
   axis(2, tck=0.02)
   axis(3, tck=0.02, labels=FALSE)
@@ -800,6 +834,65 @@ plot_border <- function(o, gene)
   }
   legend(x=70, y=5, fill=cols, legend=row_names) 
 }
+
+plot_activation <- function(o, gene)
+{
+  require(RColorBrewer)
+  # which parameters are activation parameters
+  coefs <- which(o$parameter_table$name=='coef')
+  
+  coef_acts <- c()
+  tfs       <- c()
+  
+  for (i in coefs)
+  {
+    param <- o$parameters[[i]]
+    if (param$value >= 0)
+    {
+      coef_acts <- c(coef_acts,i)
+      tfs       <- c(tfs, param$tf)
+    }
+  }
+  n <- length(coef_acts)
+  
+  col_names <- rownames(o$rate)
+  nnuc      <- length(col_names)
+  
+  m <- matrix(nrow=n, ncol=nnuc)
+  t <- o$T2D$eve_mel
+  N <- as.numeric(rowSums(o$N2D$eve_mel * t))
+  R <- o$rate$eve_mel/2.55
+  # are we using competition equations?
+  for (i in 1:length(coef_acts))
+  {
+    index <- coef_acts[[i]]
+    param <- o$parameters[[index]]
+    param$value <- 0
+    m[i,] <- (N-as.numeric(rowSums(o$N2D$eve_mel * t))) / N
+    m[i,] <- m[i,]*R
+    param$restore()
+  }
+  
+  cols <- rev(brewer.pal(n, "Paired"))
+  
+  ymax <- max(colSums(m))
+  plot.new()
+  plot.window(xlim=c(35.5,92.5),ylim=c(0,ymax), xaxs='i', yaxs='i', bty='o')
+  axis(1, tck=0.02)
+  axis(2, tck=0.02)
+  axis(3, tck=0.02, labels=FALSE)
+  axis(4, tck=0.02, labels=FALSE)
+  box(lwd=2)
+  polygon(x=c(35.5:92.5,92.5:35.5),y=c(m[1,],rep(0,nnuc)),border=NA, col=cols[1])
+  for (i in 2:n)
+    polygon(x=c(35.5:92.5,92.5:35.5),y=c(colSums(m[1:i,]),rev(colSums(matrix(m[1:(i-1),], ncol=nnuc)))),border=NA, col=cols[i])
+    
+    
+}
+
+    
+  
+
 
 
 random_sequence <- function(n, gc=0.5)

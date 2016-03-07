@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
   criCount::Param criCntParam(docroot);
   
-  annealer<Organism, lam, criCount, feedbackMove>*      fly_sa;
+  annealer<Organism, lam, criCount, feedbackMove>*     fly_sa;
   annealer<Organism, expHold, criCount, feedbackMove>* fly_expHold;
   
   if (mode->getSchedule() == LAM)
@@ -89,6 +89,20 @@ int main(int argc, char* argv[])
     fly_sa = new annealer<Organism, lam, criCount, feedbackMove>(embryo, rnd, scheduleParam, criCntParam, docroot);
     fly_sa->setCoolLog(file, (xmlname+".log").c_str());
     fly_sa->setProlix(file, (xmlname+".prolix").c_str());
+    if (mode->getVerbose() >= 1)
+      cerr << "The initial score is " << embryo.get_score() << endl;
+    fly_sa->initMoves();
+    if (mode->getVerbose() >= 1)
+      cerr << "The score is " << embryo.get_score() << " after initial moves" << endl << endl;
+    if (!mode->getProfiling())
+    {
+      fly_sa->loop();
+      if (mode->getVerbose() >= 1)
+      {
+        cerr << "The final score is " << embryo.get_score() << endl << endl;
+        fly_sa->writeResult();
+      }
+    }
   } 
   else if (mode->getSchedule() == EXP)
   {
@@ -96,44 +110,15 @@ int main(int argc, char* argv[])
     fly_expHold = new annealer<Organism, expHold, criCount, feedbackMove>(embryo, rnd, scheduleParam, criCntParam, docroot);
     fly_expHold->setStepLog(file, (xmlname+".steplog").c_str());
     fly_expHold->setProlix(file,(xmlname+".prolix").c_str());
+    if (!mode->getProfiling())
+      fly_expHold->loop();
   } 
 
 
-  if (mode->getSchedule() == LAM)
-  {
-    if (mode->getVerbose() >= 1)
-    {
-      cerr << "The initial score is " << embryo.get_score() << endl;
-      cerr << "Running initial moves..." << endl;
-    }
-    
-    fly_sa->initMoves();
-
-    
-    if (mode->getVerbose() >= 1)
-      cerr << "The score is " << embryo.get_score() << " after initial moves" << endl << endl;
-  }
   	
   if (!mode->getProfiling())
   {
-    if (mode->getSchedule() == LAM)
-      fly_sa->loop();
-    else if (mode->getSchedule() == EXP)
-      fly_expHold->loop();
-    
-    if (mode->getVerbose() >= 1)
-    {
-      cerr << "The final score is " << embryo.get_score() << endl << endl;
-      if (mode->getSchedule() == LAM)
-        fly_sa->writeResult();
-      
-      embryo.printParameters(cerr);
-     
-    }    
-   
     embryo.write("Output", root_node);
-    //boost::property_tree::xml_writer_settings<char> settings(' ', 2);
-    //write_xml_element(infile, basic_string<ptree::key_type::value_type>(), pt, -1, settings);
 
 #if BOOST_VERSION / 100 % 1000 < 56
     write_xml(xmlname, 
@@ -150,7 +135,7 @@ int main(int argc, char* argv[])
 
     /* check that I can reset everything and get the same correct answer */
     double old_score = embryo.get_score();
-    embryo.ResetAll(0);
+    embryo.ResetAll();
     double score     = embryo.get_score();
     
     if (score != old_score)

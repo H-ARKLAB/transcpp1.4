@@ -24,6 +24,7 @@
 #include "TF.h"
 #include "mode.h"
 #include "competition.h"
+#include "chromatin.h"
 
 /* For the most part, nuclei does not own the private data inside it. It simply
 points to the data from it's parent class (Organism). The notable exceptions
@@ -44,6 +45,7 @@ private:
   promoters_ptr   promoters;
   mode_ptr        mode;
   competition_ptr competition;
+  chromatin_ptr   chromatin; 
   
   // owned by Nuclei
   bindings_ptr  bindings;
@@ -186,6 +188,7 @@ public:
   void updateSites(Gene& gene)              { bindings->updateSites(gene);          }
   void updateK(Gene& gene, TF& tf)          { bindings->updateK(gene, tf);          }
   void updateKandLambda(Gene& gene, TF& tf) { bindings->updateKandLambda(gene, tf); }
+  void updateKandLambda(Gene& gene)         { bindings->updateKandLambda(gene);     }
                                    
   void restoreScores(TF& tf)       { bindings->restoreScores(tf);      }
   void restoreSites(TF& tf)        { bindings->restoreSites(tf);       }

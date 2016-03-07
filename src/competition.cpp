@@ -14,23 +14,23 @@
 /*    Constructors    */
 
 Competition::Competition():
-  window(double_param_ptr(new Parameter<double>)),
-  shift(double_param_ptr(new Parameter<double>)),
-  specificity(double_param_ptr(new Parameter<double>)),
-  threshold(double_param_ptr(new Parameter<double>)),
-  background(double_param_ptr(new Parameter<double>)),
-  S(double_param_ptr(new Parameter<double>)),
-  interaction_strength(double_param_ptr(new Parameter<double>))
+  window(double_param_ptr(new Parameter<double>("Window","Window"))),
+  shift(double_param_ptr(new Parameter<double>("Shift","Promoter"))),
+  specificity(double_param_ptr(new Parameter<double>("Specificity","Promoter"))),
+  threshold(double_param_ptr(new Parameter<double>("CompThreshold","Promoter"))),
+  background(double_param_ptr(new Parameter<double>("CompBackground","Promoter"))),
+  S(double_param_ptr(new Parameter<double>("S","Promoter"))),
+  interaction_strength(double_param_ptr(new Parameter<double>("InteractionStrength","Promoter")))
 {}
 
 Competition::Competition(ptree& pt, mode_ptr mode):
-  window(double_param_ptr(new Parameter<double>)),
-  shift(double_param_ptr(new Parameter<double>)),
-  specificity(double_param_ptr(new Parameter<double>)),
-  threshold(double_param_ptr(new Parameter<double>)),
-  background(double_param_ptr(new Parameter<double>)),
-  S(double_param_ptr(new Parameter<double>)),
-  interaction_strength(double_param_ptr(new Parameter<double>))
+  window(double_param_ptr(new Parameter<double>("Window","Window"))),
+  shift(double_param_ptr(new Parameter<double>("Shift","Promoter"))),
+  specificity(double_param_ptr(new Parameter<double>("Specificity","Promoter"))),
+  threshold(double_param_ptr(new Parameter<double>("CompThreshold","Promoter"))),
+  background(double_param_ptr(new Parameter<double>("CompBackground","Promoter"))),
+  S(double_param_ptr(new Parameter<double>("S","Promoter"))),
+  interaction_strength(double_param_ptr(new Parameter<double>("InteractionStrength","Promoter")))
 {
   set(pt, mode); 
 }
@@ -84,6 +84,8 @@ void Competition::set(ptree& pt, mode_ptr mode)
     specificity->set(mode->getN());
     threshold->set(mode->getT());
     interaction_strength->set(1);
+    background->set(0);
+    S->set(1);
   }
   else
   {
@@ -95,8 +97,6 @@ void Competition::set(ptree& pt, mode_ptr mode)
     {
       ptree& window_node = competition_node.get_child("Window");
       window->read(window_node);
-      window->setParamName("Window");
-      window->setMove("Window");
     }
     
     if (competition_node.count("Shift") == 0)
@@ -105,8 +105,6 @@ void Competition::set(ptree& pt, mode_ptr mode)
     {
       ptree& shift_node = competition_node.get_child("Shift");
       shift->read(shift_node);
-      shift->setParamName("Shift");
-      shift->setMove("Promoter");
     }
     
     if (competition_node.count("Specificity") == 0)
@@ -115,8 +113,6 @@ void Competition::set(ptree& pt, mode_ptr mode)
     {
       ptree& specificity_node = competition_node.get_child("Specificity");
       specificity->read(specificity_node);
-      specificity->setParamName("Specificity");
-      specificity->setMove("Promoter");
     }
     
     if (competition_node.count("Threshold") == 0)
@@ -125,8 +121,6 @@ void Competition::set(ptree& pt, mode_ptr mode)
     {
       ptree& threshold_node = competition_node.get_child("Threshold");
       threshold->read(threshold_node);
-      threshold->setParamName("CompThreshold");
-      threshold->setMove("Promoter");
     }
     
     if (competition_node.count("Background") == 0)
@@ -135,8 +129,6 @@ void Competition::set(ptree& pt, mode_ptr mode)
     {
       ptree& background_node = competition_node.get_child("Background");
       background->read(background_node);
-      background->setParamName("CompBackground");
-      background->setMove("Promoter");
     }
     
     if (competition_node.count("S") == 0)
@@ -145,8 +137,6 @@ void Competition::set(ptree& pt, mode_ptr mode)
     {
       ptree& S_node = competition_node.get_child("S");
       S->read(S_node);
-      S->setParamName("S");
-      S->setMove("Promoter");
     }
     
     if (competition_node.count("InteractionStrength") == 0)
@@ -155,8 +145,6 @@ void Competition::set(ptree& pt, mode_ptr mode)
     {
       ptree& strength_node = competition_node.get_child("InteractionStrength");
       interaction_strength->read(strength_node);
-      interaction_strength->setParamName("InteractionStrength");
-      interaction_strength->setMove("Promoter");
     }
     
     if (competition_node.count("NProportionality") == 0)

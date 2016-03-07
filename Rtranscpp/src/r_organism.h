@@ -6,6 +6,7 @@
 #include "r_gene.h"
 #include "r_pwm.h"
 #include "r_tf.h"
+#include "r_parameter.h"
 
 #ifndef R_ORGANISM_H
 #define R_ORGANISM_H
@@ -37,6 +38,7 @@ public:
   Rcpp::List      T2D();
   Rcpp::List      scores();
   Rcpp::List      parameters();
+  Rcpp::List      parameter_table();
   double          score()            { return organism->get_score(); }
   Defaults        get_par_defaults() { return par_defaults; }
   CharacterVector get_gene_names();
@@ -46,8 +48,15 @@ public:
   void set_genes(Rcpp::List);
   void add_tf(TFPtr);
   
-  void            reset_all()   { organism->ResetAll(0); }
+  void            reset_all()   { organism->ResetAll(); }
   void            recalculate() { organism->Recalculate(); }
+  
+  // dummy functions prevent errors when setting values through organism,
+  // i.e "organism$mode$schedule <- 1" attempts to modify mode and schedule,
+  // the latter of which is not allowed. If a dummy function is called, it is
+  // allowed, but does nothing.
+  void listdummy(Rcpp::List x) {}
+  void modedummy(ModePtr x)    {}
 };
   
   

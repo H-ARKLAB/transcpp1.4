@@ -16,6 +16,7 @@ loadModule("mod_par_defaults", TRUE)
 loadModule("mod_gene", TRUE)
 loadModule("mod_tf", TRUE)
 loadModule("mod_pwm", TRUE)
+loadModule("mod_param", TRUE)
 
 evalqOnLoad({
   
@@ -27,6 +28,45 @@ setMethod("show", Organism, function(object)
   for (i in ls(object))
     cat(paste0("\t$",formatC(i, width=-nspaces), "\n"))
   cat("\n")
+})
+
+setMethod("show", PWMParameter, function(object)
+{
+  cat(paste0("PWM Parameter Object\n"))
+  cat("$name\n")
+  print(object$name)
+  cat("$type\n")
+  print(object$type)
+  cat("$tf\n")
+  print(object$tf)
+  cat("$value\n")
+  print(object$value)
+})
+
+setMethod("show", DoubleParameter, function(object)
+{
+  cat(paste0("Double Parameter Object\n"))
+  cat("$name\n")
+  print(object$name)
+  cat("$type\n")
+  print(object$type)
+  cat("$tf\n")
+  print(object$tf)
+  cat("$value\n")
+  print(object$value)
+})
+
+setMethod("show", SeqParameter, function(object)
+{
+  cat(paste0("Sequence Parameter Object\n"))
+  cat("$name\n")
+  print(object$name)
+  cat("$type\n")
+  print(object$type)
+  cat("$tf\n")
+  print(object$tf)
+  cat("$value\n")
+  print(object$value)
 })
 
 })

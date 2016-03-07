@@ -30,11 +30,11 @@ using boost::property_tree::ptree;
 /*      Constructors    */
 
 TF::TF():
-  energy(pwm_param_ptr(new Parameter<PWM>)),
-  kmax(double_param_ptr(new Parameter<double>)),
-  threshold(double_param_ptr(new Parameter<double>)),
-  lambda(double_param_ptr(new Parameter<double>)),
-  pwm_offset(double_param_ptr(new Parameter<double>))
+  energy(pwm_param_ptr(new Parameter<PWM>("PWM","PWM"))),
+  kmax(double_param_ptr(new Parameter<double>("Kmax","Kmax"))),
+  threshold(double_param_ptr(new Parameter<double>("Threshold","Sites"))),
+  lambda(double_param_ptr(new Parameter<double>("Lambda","Lambda"))),
+  pwm_offset(double_param_ptr(new Parameter<double>("PWMOffset","ResetAll")))
   
 {
   // initialize all the member variables
@@ -56,11 +56,11 @@ TF::TF():
 }
 
 TF::TF(ptree& pt, mode_ptr m):
-  energy(pwm_param_ptr(new Parameter<PWM>)),
-  kmax(double_param_ptr(new Parameter<double>)),
-  threshold(double_param_ptr(new Parameter<double>)),
-  lambda(double_param_ptr(new Parameter<double>)),
-  pwm_offset(double_param_ptr(new Parameter<double>))
+  energy(pwm_param_ptr(new Parameter<PWM>("PWM","PWM"))),
+  kmax(double_param_ptr(new Parameter<double>("Kmax","Kmax"))),
+  threshold(double_param_ptr(new Parameter<double>("Threshold","Sites"))),
+  lambda(double_param_ptr(new Parameter<double>("Lambda","Lambda"))),
+  pwm_offset(double_param_ptr(new Parameter<double>("PWMOffset","ResetAll")))
 {
   mode = m;
   set(pt);
@@ -90,17 +90,14 @@ void TF::set(ptree& pt)
   
   ptree& kmax_node = pt.get_child("kmax");
   kmax->read(kmax_node);
-  kmax->setParamName("kmax");
   kmax->setTFName(tfname);
   
   ptree& threshold_node = pt.get_child("threshold");
   threshold->read(threshold_node);
-  threshold->setParamName("threshold");
   threshold->setTFName(tfname);
   
   ptree& lambda_node = pt.get_child("lambda");
   lambda->read(lambda_node);
-  lambda->setParamName("lambda");
   lambda->setTFName(tfname);
   
   if (pt.count("pwm_offset") == 0)
@@ -110,7 +107,6 @@ void TF::set(ptree& pt)
     ptree& pwm_offset_node = pt.get_child("pwm_offset");
     pwm_offset->read(pwm_offset_node);
   }
-  pwm_offset->setParamName("pmw_offset");
   pwm_offset->setTFName(tfname);
     
   ptree& pwm_node = pt.get_child("PWM");
@@ -139,8 +135,6 @@ void TF::readPWM(ptree& pwm_node)
   
   energy->setAnnealed(pwm_node.get<bool>("<xmlattr>.anneal", false));
   energy->setParamName(tfname + "_pwm");
-  energy->setMove("PWM");
-  energy->setRestore("PWM");
   energy->setNode(&pwm_node);
   energy->setTFName(tfname);
   
@@ -497,8 +491,11 @@ void TF::write(ptree& tfsnode)
   ptree & lambda_node     = tfnode.add("lambda        ","");
   lambda->write(lambda_node, mode->getPrecision());
   
-  ptree & pwm_offset_node = tfnode.add("pwm_offset    ","");
-  pwm_offset->write(pwm_offset_node, mode->getPrecision());
+  if (pwm_offset->isAnnealed() || pwm_offset->getValue() != 0)
+  {
+    ptree & pwm_offset_node = tfnode.add("pwm_offset    ","");
+    pwm_offset->write(pwm_offset_node, mode->getPrecision());
+  }
   
   ptree& coefs_node = tfnode.add("Coefficients", "");
   int ncoefs = coefs.size();
@@ -513,7 +510,7 @@ void TF::write(ptree& tfsnode)
   
   
   ptree & pwmnode = tfnode.add("PWM","");
-  pwm.print(cerr, 2);
+  //pwm.print(cerr, 2);
   
   if (energy->isAnnealed())
     input_type = PSSM;

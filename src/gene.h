@@ -69,8 +69,9 @@ public:
   double getWeight() { return weight; }
   scale_factor_ptr   getScale() {return scale;}
   void getParameters(param_ptr_vector& p);
+  void getAllParameters(param_ptr_vector& p);
   seq_param_ptr      getSequenceParam() { return sequence; }
-
+  promoter_ptr       getPromoter()      { return promoter; }
   // setters
   void setWeight(double weight) { this->weight = weight; }
   void setSequence(vector<int>  s);
@@ -125,6 +126,7 @@ public:
   gene_ptr getGeneptr(int index);
   int size() const;
   void getParameters(param_ptr_vector& p);
+  void getAllParameters(param_ptr_vector& p);
   
   // Setters
   void setPromoters(promoters_ptr p)        { promoters = p;}

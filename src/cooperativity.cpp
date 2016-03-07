@@ -17,11 +17,11 @@
 
 
 Cooperativity::Cooperativity():
-  Kcoop(double_param_ptr(new Parameter<double>))
+  Kcoop(double_param_ptr(new Parameter<double>("Kcoop","Kcoop")))
 {}
 
 Cooperativity::Cooperativity(distances_ptr distances, ptree& pt):
-  Kcoop(double_param_ptr(new Parameter<double>))
+  Kcoop(double_param_ptr(new Parameter<double>("Kcoop","Kcoop")))
 { 
   this->distances = distances;
   read(pt); 
@@ -60,7 +60,6 @@ void Cooperativity::read(ptree& pt)
   TT = orientation_node.get<bool>("<xmlattr>.TT");
   
   Kcoop->read(pt.get_child("Kcoop"));
-  Kcoop->setParamName("Kcoop");
   
   string distname = pt.get<string>("<xmlattr>.distance");
   dist = distances->getDistance(distname);

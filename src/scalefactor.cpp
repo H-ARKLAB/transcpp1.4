@@ -21,8 +21,8 @@
 ScaleFactor::ScaleFactor() 
 {
   name = "default";
-  double_param_ptr Aparam(new Parameter<double>());
-  double_param_ptr Bparam(new Parameter<double>());
+  double_param_ptr Aparam(new Parameter<double>("ScaleFactor","Null"));
+  double_param_ptr Bparam(new Parameter<double>("ScaleFactor","Null"));
   A = Aparam;
   B = Bparam;
   A->set(1);
@@ -31,8 +31,6 @@ ScaleFactor::ScaleFactor()
   B->setAnnealed(false);
   A->setLimits(1,1);
   B->setLimits(0,0);
-  A->setParamName("ScaleFactor");
-  B->setParamName("ScaleFactor");
 }
 
 ScaleFactor::ScaleFactor(ptree& pt) 
@@ -76,12 +74,10 @@ double ScaleFactor::unscale(double x)
 void ScaleFactor::read(ptree& pt)
 {
   name = pt.get<string>("<xmlattr>.name");
-  double_param_ptr Aparam(new Parameter<double>(pt.get_child("A")));
-  double_param_ptr Bparam(new Parameter<double>(pt.get_child("B")));
+  double_param_ptr Aparam(new Parameter<double>(pt.get_child("A"),"ScaleFactor","Null"));
+  double_param_ptr Bparam(new Parameter<double>(pt.get_child("B"),"ScaleFactor","Null"));
   A = Aparam;
   B = Bparam;
-  A->setParamName("ScaleFactor");
-  B->setParamName("ScaleFactor");
 }
 
 void ScaleFactor::write(ptree& pt)

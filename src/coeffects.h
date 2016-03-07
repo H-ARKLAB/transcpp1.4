@@ -51,6 +51,7 @@ public:
   // Getters
   void   getParameters(param_ptr_vector& p);
   void   getAllParameters(param_ptr_vector& p);
+  distance_ptr getDist() {return dist; }
   
   string& getActor()  { return actor; }
   string& getTarget() { return target; }
@@ -94,6 +95,7 @@ public:
   coeffect_pairs getTargets(string tfname);
   void           getParameters(param_ptr_vector& p);
   void           getAllParameters(param_ptr_vector& p);
+  vector<coeffect_ptr>& getAllCoeffects() { return coeffects; }
   
   // Setters
   void add(coeffect_ptr c) {coeffects.push_back(c);}

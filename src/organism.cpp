@@ -19,6 +19,9 @@
 #include <boost/random/variate_generator.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/pointer_cast.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <boost/ref.hpp>
 
 #define foreach_ BOOST_FOREACH
 #define to_ boost::lexical_cast
@@ -40,6 +43,7 @@ Organism::Organism() :
     score_class(score_ptr(new Score)),
     coops(coops_ptr(new CooperativityContainer)),
     competition(competition_ptr(new Competition)),
+    chromatin(chromatin_ptr(new Chromatin)),
     nuclei(nuclei_ptr(new Nuclei))
 {
   move_count = 0;
@@ -60,6 +64,7 @@ Organism::Organism(string fname, string section) :
     score_class(score_ptr(new Score)),
     coops(coops_ptr(new CooperativityContainer)),
     competition(competition_ptr(new Competition)),
+    chromatin(chromatin_ptr(new Chromatin)),
     nuclei(nuclei_ptr(new Nuclei))
 {
   move_count = 0;
@@ -89,6 +94,7 @@ Organism::Organism(ptree& pt, mode_ptr m) :
     score_class(score_ptr(new Score)),
     coops(coops_ptr(new CooperativityContainer)),
     competition(competition_ptr(new Competition)),
+    chromatin(chromatin_ptr(new Chromatin)),
     nuclei(nuclei_ptr(new Nuclei))
 {
   move_count = 0;
@@ -153,9 +159,12 @@ void Organism::initialize(ptree& pt)
   if (mode->getVerbose() >= 2)
     cerr << "Initialized coactivation and corepression" << endl;
 
+  chromatin->read(pt, master_genes, mode);
+  
   master_tfs->setCoops(coops);
   master_tfs->setCoeffects(coeffects);
 
+  chromatin->getParameters(params);
   competition->getParameters(params);
   distances->getParameters(params);
   master_tfs->getParameters(params);
@@ -164,14 +173,29 @@ void Organism::initialize(ptree& pt)
   coops->getParameters(params);
   coeffects->getParameters(params);
   master_genes->getParameters(params);
+  
 
+  //cerr << all_params.size() << endl;
+  chromatin->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
   competition->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
   distances->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
   master_tfs->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
   promoters->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
   scale_factors->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
   coops->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
   coeffects->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
+  master_genes->getAllParameters(all_params);
+  //cerr << all_params.size() << endl;
+  
+
 
   if (mode->getVerbose() >= 2)
   {
@@ -251,6 +275,9 @@ bindings_ptr Organism::getBindings()
   return nuclei->getBindings();
 }
 
+
+
+
 /*    Methods   */
 
 /* scoring is actually going to be somewhat tricky in the future. Calculations
@@ -285,6 +312,7 @@ void Organism::write(string node, ptree& pt)
   if (mode->getCompetition())
     competition->write(output);
   distances->write(output);
+  chromatin->write(output);
   if (mode->getVerbose() >= 2)
     cerr << "wrote distances" << endl;
   promoters->write(output);
@@ -537,7 +565,7 @@ void Organism::scramble()
   for (int i=0; i<nparams; i++)
     params[i]->scramble(uniDblGen());
   
-  ResetAll(0);
+  ResetAll();
   score();
 }
 
@@ -559,58 +587,119 @@ void Organism::permute(string& table, string& by)
 
 void Organism::setMoves()
 {
-  /* First, we set up maps for every type of move and restore we might make.
-  This is really just here to make it cleaner and not have a bunch of if blocks
-  for move types */
-  move_map[string("ResetAll"        )] = &Organism::ResetAll;
-  move_map[string("PWM"             )] = &Organism::movePWM;
-  move_map[string("Scores"          )] = &Organism::moveScores;
-  move_map[string("Sites"           )] = &Organism::moveSites;
-  move_map[string("Lambda"          )] = &Organism::moveLambda;
-  move_map[string("Kmax"            )] = &Organism::moveKmax;
-  move_map[string("CoopD"           )] = &Organism::moveCoopD;
-  move_map[string("Kcoop"           )] = &Organism::moveKcoop;
-  move_map[string("Coef"            )] = &Organism::moveCoef;
-  move_map[string("Quenching"       )] = &Organism::moveQuenching;
-  move_map[string("QuenchingCoef"   )] = &Organism::moveQuenchingCoef;
-  move_map[string("Coeffect"        )] = &Organism::moveCoeffect;
-  move_map[string("CoeffectEff"     )] = &Organism::moveCoeffectEff;
-  move_map[string("Window"          )] = &Organism::moveWindow;
-  move_map[string("Promoter"        )] = &Organism::movePromoter;
-  move_map[string("Null"            )] = &Organism::null_function;
+  moves.clear();
+  restores.clear();
+  all_moves.clear();
+  all_restores.clear();
 
-  restore_map[string("ResetAll"     )] = &Organism::ResetAll;
-  restore_map[string("PWM"          )] = &Organism::restorePWM;
-  restore_map[string("Scores"       )] = &Organism::restoreScores;
-  restore_map[string("Sites"        )] = &Organism::restoreSites;
-  restore_map[string("Lambda"       )] = &Organism::restoreLambda;
-  restore_map[string("Kmax"         )] = &Organism::restoreKmax;
-  restore_map[string("CoopD"        )] = &Organism::restoreCoopD;
-  restore_map[string("Kcoop"        )] = &Organism::restoreKcoop;
-  restore_map[string("Coef"         )] = &Organism::restoreCoef;
-  restore_map[string("Quenching"    )] = &Organism::restoreQuenching;
-  restore_map[string("QuenchingCoef")] = &Organism::restoreQuenchingCoef;
-  restore_map[string("Coeffect"     )] = &Organism::restoreCoeffect;
-  restore_map[string("CoeffectEff"  )] = &Organism::restoreCoeffectEff;
-  restore_map[string("Window"       )] = &Organism::moveWindow;
-  restore_map[string("Promoter"     )] = &Organism::movePromoter;
-  restore_map[string("Null"         )] = &Organism::null_function;
-
+  setPVectorMoves(moves, restores, params);
+  setPVectorMoves(all_moves, all_restores, all_params);
+  
+}
+  
+void Organism::setPVectorMoves(vector<boost::function<void (Organism*)> >& mvec, vector<boost::function<void (Organism*)> >& rvec, param_ptr_vector& pvec)
+{
   string move;
-  int nparams = params.size();
-  for (int i=0; i<nparams; i++)
+  int npvec = pvec.size();
+  for (int i=0; i<npvec; i++)
   {
-    move = params[i]->getMove();
+    move = pvec[i]->getMove();
 
-    // make sure we have these functions available
-    if (move_map.find(move) == move_map.end())
-      error("setMoves() Could not find move function with name " + move + "for parameter " + params[i]->getParamName());
-
-    if (restore_map.find(move) == restore_map.end())
-      error("setMoves() Could not find restore function with name " + move + "for parameter " + params[i]->getParamName());
-
-    moves.push_back(move_map[move]);
-    restores.push_back(restore_map[move]);
+    if (move == string("Scores"))
+    {
+      TF& tf = master_tfs->getTF(pvec[i]->getTFName());
+      mvec.push_back(boost::bind(&Organism::moveScores, this, boost::ref(tf)));
+      rvec.push_back(boost::bind(&Organism::restoreScores, this, boost::ref(tf)));
+    }
+    else if (move == string("PWM"))
+    {
+      TF& tf = master_tfs->getTF(pvec[i]->getTFName());
+      mvec.push_back(boost::bind(&Organism::movePWM, this, boost::ref(tf)));
+      rvec.push_back(boost::bind(&Organism::restorePWM, this, boost::ref(tf)));
+    }
+    else if (move == string("Sites"))
+    {
+      TF& tf = master_tfs->getTF(pvec[i]->getTFName());
+      mvec.push_back(boost::bind(&Organism::moveSites, this, boost::ref(tf)));
+      rvec.push_back(boost::bind(&Organism::restoreSites, this, boost::ref(tf)));
+    }
+    else if (move == string("Lambda"))
+    {
+      TF& tf = master_tfs->getTF(pvec[i]->getTFName());
+      mvec.push_back(boost::bind(&Organism::moveLambda, this, boost::ref(tf)));
+      rvec.push_back(boost::bind(&Organism::restoreLambda, this, boost::ref(tf)));
+    }
+    else if (move == string("Kmax"))
+    {
+      TF& tf = master_tfs->getTF(pvec[i]->getTFName());
+      mvec.push_back(boost::bind(&Organism::moveKmax, this, boost::ref(tf)));
+      rvec.push_back(boost::bind(&Organism::restoreKmax, this, boost::ref(tf)));
+    }
+    else if (move == string("Coef"))
+    {
+      double_param_ptr p = boost::dynamic_pointer_cast<Parameter<double> >(pvec[i]);
+      mvec.push_back(boost::bind(&Organism::moveCoef, this, boost::ref(p)));
+      rvec.push_back(boost::bind(&Organism::restoreCoef, this, boost::ref(p)));
+    }
+    else if (move == string("CoopD"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveCoopD, this));
+      rvec.push_back(boost::bind(&Organism::restoreCoopD, this));
+    }
+    else if (move == string("Kcoop"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveKcoop, this));
+      rvec.push_back(boost::bind(&Organism::restoreKcoop, this));
+    }
+    else if (move == string("Quenching"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveQuenching, this));
+      rvec.push_back(boost::bind(&Organism::restoreQuenching, this));
+    }
+    else if (move == string("QuenchingCoef"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveQuenchingCoef, this));
+      rvec.push_back(boost::bind(&Organism::restoreQuenchingCoef, this));
+    }
+    else if (move == string("Coeffect"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveCoeffect, this));
+      rvec.push_back(boost::bind(&Organism::restoreCoeffect, this));
+    }
+    else if (move == string("CoeffectEff"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveCoeffectEff, this));
+      rvec.push_back(boost::bind(&Organism::restoreCoeffectEff, this));
+    }
+    else if (move == string("Window"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveWindow, this));
+      rvec.push_back(boost::bind(&Organism::moveWindow, this));
+    }
+    else if (move == string("Promoter"))
+    {
+      mvec.push_back(boost::bind(&Organism::movePromoter, this));
+      rvec.push_back(boost::bind(&Organism::movePromoter, this));
+    }
+    else if (move == string("Kacc"))
+    {
+      mvec.push_back(boost::bind(&Organism::moveKacc, this));
+      rvec.push_back(boost::bind(&Organism::restoreKacc, this));
+    }
+    else if (move == string("Null"))
+    {
+      mvec.push_back(boost::bind(&Organism::null_function, this));
+      rvec.push_back(boost::bind(&Organism::null_function, this));
+    }
+    else if (move == string("ResetAll"))
+    {
+      if (pvec[i]->isAnnealed())
+        warning("Move function for parameter " + pvec[i]->getParamName() + " is ResetAll. Annealing may be very slow");
+      mvec.push_back(boost::bind(&Organism::ResetAll, this));
+      rvec.push_back(boost::bind(&Organism::ResetAll, this));
+    }
+    else
+      error("setMvec() Could not find move function with name " + move + " for parameter " + pvec[i]->getParamName());
   }
 }
 
@@ -643,6 +732,7 @@ void Organism::Recalculate()
   params.clear();
   all_params.clear();
   
+  chromatin->getParameters(params);
   competition->getParameters(params);
   distances->getParameters(params);
   master_tfs->getParameters(params);
@@ -651,7 +741,9 @@ void Organism::Recalculate()
   coops->getParameters(params);
   coeffects->getParameters(params);
   master_genes->getParameters(params);
+  
 
+  chromatin->getAllParameters(all_params);
   competition->getAllParameters(all_params);
   distances->getAllParameters(all_params);
   master_tfs->getAllParameters(all_params);
@@ -659,6 +751,7 @@ void Organism::Recalculate()
   scale_factors->getAllParameters(all_params);
   coops->getAllParameters(all_params);
   coeffects->getAllParameters(all_params);
+  master_genes->getAllParameters(all_params);
   
   populate_nuclei();
   
@@ -673,11 +766,11 @@ void Organism::Recalculate()
 is not working, this is the easiest way to check, however it should generally
 be avoided as it will be very slow */
 
-void Organism::ResetAll(int idx)
+void Organism::ResetAll()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Reseting everything" << endl;
-
+  
   int ngenes  = master_genes->size();
 
 #ifdef PARALLEL
@@ -708,12 +801,10 @@ void Organism::ResetAll(int idx)
 tweaking pwms. In general we believe this is a bad idea, but it could be useful
 for comparing to other results (segal) or in very careful applications. If you
 decide to use this feature, be ready to defend your decision! */
-void Organism::moveScores(int idx)
+void Organism::moveScores(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving sequence scores" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
 
   int ngenes  = master_genes->size();
 
@@ -745,12 +836,10 @@ void Organism::moveScores(int idx)
   }
 }
 
-void Organism::restoreScores(int idx)
+void Organism::restoreScores(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring sequence scores" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
 
   int ngenes  = master_genes->size();
 
@@ -778,12 +867,11 @@ void Organism::restoreScores(int idx)
 tweaking pwms. In general we believe this is a bad idea, but it could be useful
 for comparing to other results (segal) or in very careful applications. If you
 decide to use this feature, be ready to defend your decision! */
-void Organism::movePWM(int idx)
+void Organism::movePWM(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving PWM" << endl;
 
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
   int ngenes  = master_genes->size();
 
   //params[idx]->print(cerr);
@@ -817,12 +905,11 @@ void Organism::movePWM(int idx)
 
 }
 
-void Organism::restorePWM(int idx)
+void Organism::restorePWM(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring PWM" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
+  
   int ngenes  = master_genes->size();
 
 #ifdef PARALLEL
@@ -848,13 +935,10 @@ void Organism::restorePWM(int idx)
 
 /* if thresholds are changed, the sites will need to be repopulated for the tf
 changed */
-void Organism::moveSites(int idx)
+void Organism::moveSites(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving Sites" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
-
 
   int ngenes  = master_genes->size();
 
@@ -885,13 +969,10 @@ void Organism::moveSites(int idx)
 
 }
 
-void Organism::restoreSites(int idx)
+void Organism::restoreSites(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring Sites" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
-
 
   int ngenes  = master_genes->size();
 
@@ -917,7 +998,7 @@ void Organism::restoreSites(int idx)
 
 /* if we move cooperativity distance we need to repopulate subgroups, but
 quenching and coeffect interactions are unchanged */
-void Organism::moveCoopD(int idx)
+void Organism::moveCoopD()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving cooperativity distance" << endl;
@@ -946,7 +1027,7 @@ void Organism::moveCoopD(int idx)
 
 }
 
-void Organism::restoreCoopD(int idx)
+void Organism::restoreCoopD()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring cooperativity distance" << endl;
@@ -972,13 +1053,10 @@ void Organism::restoreCoopD(int idx)
 
 /* If we change lambda we need dont need to scan for new sites, but we do
 need to update K and recalc occupancy and interations */
-void Organism::moveLambda(int idx)
+void Organism::moveLambda(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving lambda" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
-
 
   int ngenes  = master_genes->size();
 
@@ -1002,12 +1080,10 @@ void Organism::moveLambda(int idx)
 
 }
 
-void Organism::restoreLambda(int idx)
+void Organism::restoreLambda(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring lambda" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
 
   int ngenes  = master_genes->size();
 
@@ -1024,17 +1100,63 @@ void Organism::restoreLambda(int idx)
     //nuclei->updateN();
     nuclei->updateR(gene);
   }
+}
+
+void Organism::moveKacc()
+{
+  if (mode->getVerbose() >= 3)
+    cerr << "Moving kacc" << endl;
+
+  int ngenes  = master_genes->size();
+
+#ifdef PARALLEL
+    #pragma omp parallel for num_threads(mode->getNumThreads())
+    #endif
+
+  for (int j=0; j<ngenes; j++)
+  {
+    Gene& gene = master_genes->getGene(j);
+    if (!gene.getInclude()) continue;
+    nuclei->saveAllOccupancy(gene);
+    // dont bother saving K and Lambda since that takes nearly as long as calculating
+    nuclei->updateKandLambda(gene);
+    nuclei->calcOccupancy(gene);
+    nuclei->calcCoeffects(gene);
+    nuclei->calcQuenching(gene);
+    //nuclei->updateN();
+    nuclei->updateR(gene);
+  }
+
+}
+
+void Organism::restoreKacc()
+{
+  if (mode->getVerbose() >= 3)
+    cerr << "Restoring kacc" << endl;
+
+  int ngenes  = master_genes->size();
+
+#ifdef PARALLEL
+    #pragma omp parallel for num_threads(mode->getNumThreads())
+    #endif
+
+  for (int j=0; j<ngenes; j++)
+  {
+    Gene& gene = master_genes->getGene(j);
+    if (!gene.getInclude()) continue;
+    nuclei->restoreAllOccupancy(gene);
+    nuclei->updateKandLambda(gene);
+    //nuclei->updateN();
+    nuclei->updateR(gene);
+  }
 
 }
 
 // Moving Kmax is about the same as moving lambda. Maybe I should just ignore..
-void Organism::moveKmax(int idx)
+void Organism::moveKmax(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving kmax" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
-
 
   int ngenes  = master_genes->size();
 
@@ -1057,13 +1179,10 @@ void Organism::moveKmax(int idx)
 
 }
 
-void Organism::restoreKmax(int idx)
+void Organism::restoreKmax(TF& tf)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring kmax" << endl;
-
-  TF& tf = master_tfs->getTF(params[idx]->getTFName());
-
 
   int ngenes  = master_genes->size();
 
@@ -1084,7 +1203,7 @@ void Organism::restoreKmax(int idx)
 }
 
 // if we move cooperativity we simply need to redo occupancy calculations
-void Organism::moveKcoop(int idx)
+void Organism::moveKcoop()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving kcoop" << endl;
@@ -1108,7 +1227,7 @@ void Organism::moveKcoop(int idx)
   }
 }
 
-void Organism::restoreKcoop(int idx)
+void Organism::restoreKcoop()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring kcoop" << endl;
@@ -1130,7 +1249,7 @@ void Organism::restoreKcoop(int idx)
 }
 
 /* If we change coeffect distances we need to repopulate the coeffects*/
-void Organism::moveCoeffect(int idx)
+void Organism::moveCoeffect()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving coeffects" << endl;
@@ -1158,7 +1277,7 @@ void Organism::moveCoeffect(int idx)
   }
 }
 
-void Organism::restoreCoeffect(int idx)
+void Organism::restoreCoeffect()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring coeffects" << endl;
@@ -1184,41 +1303,37 @@ void Organism::restoreCoeffect(int idx)
 /* If we allow a coefficient to switch from activator to repressor, we use this
 function. If the bounds dont allow this, you can simply point the move generator
 to move quenching or move activations */
-void Organism::moveCoef(int idx)
+void Organism::moveCoef(double_param_ptr p)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving TF coefficient" << endl;
-
   
-  double_param_ptr p = boost::dynamic_pointer_cast<Parameter<double> >(params[idx]);
   val  = p->getValue();
   prev = p->getPrevious();
   
   if ( val >= 0 && prev >= 0)
-    movePromoter(idx);
+    movePromoter();
   else if ( val <= 0 && prev <= 0)
-    moveQuenchingCoef(idx);
+    moveQuenchingCoef();
   else
-    moveQuenching(idx);
+    moveQuenching();
 }
 
-void Organism::restoreCoef(int idx)
+void Organism::restoreCoef(double_param_ptr p)
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring TF coefficient" << endl;
-
-  double_param_ptr p = boost::dynamic_pointer_cast<Parameter<double> >(params[idx]);
   
   if ( val >= 0 && prev >= 0)
-    movePromoter(idx);
+    movePromoter();
   else if ( val <= 0 && prev <= 0)
-    restoreQuenchingCoef(idx);
+    restoreQuenchingCoef();
   else
-    restoreQuenching(idx);
+    restoreQuenching();
 }
 
 /* These functions are used if a quencher has been added or removed */
-void Organism::moveQuenching(int idx)
+void Organism::moveQuenching()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving quenching" << endl;
@@ -1252,7 +1367,7 @@ void Organism::moveQuenching(int idx)
   }
 }
 
-void Organism::restoreQuenching(int idx)
+void Organism::restoreQuenching()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring quenching" << endl;
@@ -1280,7 +1395,7 @@ void Organism::restoreQuenching(int idx)
 
 
 /* These functions are used if a the number of quenchers is unchanged */
-void Organism::moveQuenchingCoef(int idx)
+void Organism::moveQuenchingCoef()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving quenching coefficient" << endl;
@@ -1302,7 +1417,7 @@ void Organism::moveQuenchingCoef(int idx)
   }
 }
 
-void Organism::restoreQuenchingCoef(int idx)
+void Organism::restoreQuenchingCoef()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring quenching coefficient" << endl;
@@ -1324,7 +1439,7 @@ void Organism::restoreQuenchingCoef(int idx)
 }
 
 /* If we have moved coactivation or corepression efficiency */
-void Organism::moveCoeffectEff(int idx)
+void Organism::moveCoeffectEff()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving coeffect coefficient" << endl;
@@ -1347,7 +1462,7 @@ void Organism::moveCoeffectEff(int idx)
   }
 }
 
-void Organism::restoreCoeffectEff(int idx)
+void Organism::restoreCoeffectEff()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Restoring coeffect coefficient" << endl;
@@ -1369,7 +1484,7 @@ void Organism::restoreCoeffectEff(int idx)
 }
 
 /* if we have moved the promoter properties we simply call this */
-void Organism::movePromoter(int idx)
+void Organism::movePromoter()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving promoter parameter" << endl;
@@ -1388,7 +1503,7 @@ void Organism::movePromoter(int idx)
 }
 
 /* if we have moved the promoter properties we simply call this */
-void Organism::moveWindow(int idx)
+void Organism::moveWindow()
 {
   if (mode->getVerbose() >= 3)
     cerr << "Moving window parameter" << endl;
@@ -1410,7 +1525,7 @@ void Organism::moveWindow(int idx)
 /* this is somewhat awkward, but we dont need to do anything but rescore if
 scale factors are used, so this is a null funtions */
 
-void Organism::null_function(int idx)
+void Organism::null_function()
 {}
 
 
@@ -1446,7 +1561,7 @@ void Organism::deserialize(void const *buf)
     params[i]->deserialize(cbuf);
     cbuf += params[i]->getSize();
   }
-  ResetAll(0);
+  ResetAll();
   score();
 }
 
@@ -1491,8 +1606,7 @@ void   Organism::generateMove(int idx, double theta)
 
   if (!params[idx]->isOutOfBounds())
   {
-    MFP fp = moves[idx];
-    (this->*fp)(idx);
+    moves[idx](this);
     score();
   }
   else
@@ -1518,14 +1632,25 @@ void Organism::adjustThresholds(double percent)
     tf.setThreshold(new_threshold);
     //cerr << "threshold for " << tf.getName() << " is " << new_threshold << endl;
   }
-  ResetAll(1);
+  ResetAll();
 }
   
 void Organism::move(int idx)
 {
+  moves[idx](this);
+  score();
+}
+
+void Organism::move_all(int idx)
+{
   
-  MFP fp = moves[idx];
-  (this->*fp)(idx);
+  all_moves[idx](this);
+  score();
+}
+
+void Organism::restore_all(int idx)
+{
+  all_restores[idx](this);
   score();
 }
 
@@ -1536,47 +1661,15 @@ void   Organism::restoreMove(int idx)
 
   params[idx]->restore();
 
+  // we only want to restore a move if it was out of bounds
   if (!params[idx]->isOutOfBounds())
   {
-    MFP fp = restores[idx];
-    (this->*fp)(idx);
+    restores[idx](this);
   }
+
   score();
   if (mode->getVerbose() >= 3)
     cerr << "the score is now: " << setprecision(16) << score_out << endl;
-
-  /*if (score_out != previous_score_out)
-  {
-    stringstream err;
-    err << setprecision(16);
-    err << "Restoring param with index "
-    << idx
-    << " failed. The Score was "
-    << score_out
-    << " but should have been "
-    << previous_score_out;
-    error(err.str());
-  }
-
-  if (mode->getVerbose() >= 3)
-  {
-    double tmp_score = score_out;
-    ResetAll(idx);
-    score();
-    if (score_out != tmp_score)
-    {
-      stringstream err;
-      err << setprecision(16);
-      err << "Restoring param with index "
-      << idx
-      << " failed. The Score was "
-      << tmp_score
-      << " but should have been "
-      << score_out;
-      error(err.str());
-    }
-  }*/
-
 }
 
 void Organism::printParameters(ostream& os)

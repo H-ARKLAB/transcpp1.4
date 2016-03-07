@@ -87,38 +87,45 @@ int Subgroup::getLeftBound() const { return left_bound; }
 
 /*    Methods   */
 
-bool Subgroup::overlaps(BindingSite* site)
+bool Subgroup::overlaps(BindingSite& site)
 {
-  return ( site->m < right_bound && left_bound < site->n);
+  return ( site.m < right_bound && left_bound < site.n);
 }
 
 // check to see if this site coops with any sites already in group
-bool Subgroup::checkCoop(BindingSite* site1)
+bool Subgroup::checkCoop(BindingSite& site1)
 {
   char o1,o2;
-  TF* tf1 = site1->tf;
+  TF& tf1 = *(site1.tf);
+  
+  if (!tf1.ncoops()) return false;
+  
   int nsites = sites_f.size();
+  int site1n = site1.n;
+  int site1m = site1.m;  
   for (int i=0; i<nsites; i++)
   {
-    BindingSite* site2 = sites_f[i];
-    TF* tf2 = site2->tf;
+    BindingSite& site2 = *(sites_f[i]);
+    int site2n = site2.n;
+    int site2m = site2.m;  
+    TF* tf2 = site2.tf;
     
-    if (site1->n <= site2->m)
+    if (site1n <= site2m)
     {
-      o1 = site1->orientation;
-      o2 = site2->orientation;
+      o1 = site1.orientation;
+      o2 = site2.orientation;
     }
     else
     {
-      o2 = site1->orientation;
-      o1 = site2->orientation;
+      o2 = site1.orientation;
+      o1 = site2.orientation;
     }
     
-    if (tf1->checkCoops(tf2, o1, o2))
+    if (tf1.checkCoops(tf2, o1, o2))
     {
-      coop_ptr cur_coop = tf1->getCoop(tf2);
-      int dist1 = abs(site2->m - site1->n);
-      int dist2 = abs(site1->m - site2->n);
+      coop_ptr cur_coop = tf1.getCoop(tf2);
+      int dist1 = abs(site2m - site1n);
+      int dist2 = abs(site1m - site2n);
       int dist  = min(dist1, dist2);
       double distfunc = cur_coop->distFunc(dist);
       if (distfunc > 0)
@@ -256,6 +263,10 @@ iterate_partition(vector<Partition>& p, vector<BindingSite*>& sites, int site_in
   Partition& last_part = p[cur_part.last];
   Partition& init_part = p[site_index];
     
+  vector<double>& cur_part_Z   = cur_part.Z;
+  vector<double>& cur_part_Znc = cur_part.Znc;
+  vector<double>& cur_part_Zc  = cur_part.Zc;
+
   int ncoops = cur_part.coop_site.size();
     
   vector<double>& kv   = sites[site_index]->kv;
@@ -271,9 +282,9 @@ iterate_partition(vector<Partition>& p, vector<BindingSite*>& sites, int site_in
       double last_Z = last_part.Z[i];
       double new_Z  = last_Z*cur_kv;
       
-      cur_part.Z[i]   = init_Z + new_Z;
-      cur_part.Znc[i] = new_Z;
-      cur_part.Zc[i]  = 0;
+      cur_part_Z[i]   = init_Z + new_Z;
+      cur_part_Znc[i] = new_Z;
+      cur_part_Zc[i]  = 0;
     }
     
     for (int j=0; j<ncoops; j++)
@@ -292,8 +303,8 @@ iterate_partition(vector<Partition>& p, vector<BindingSite*>& sites, int site_in
         double cur_kv     = kv[k];
         double last_Z     = p[coop_past].Z[k];
         double weight     = last_Z*cur_coopkv*cur_kv*kcoop;
-        cur_part.Z[k]  += weight;
-        cur_part.Zc[k] += weight;
+        cur_part_Z[k]  += weight;
+        cur_part_Zc[k] += weight;
       }
     }
   }
@@ -306,8 +317,8 @@ iterate_partition(vector<Partition>& p, vector<BindingSite*>& sites, int site_in
       double last_Z = last_part.Z[i];
       double new_Z  = last_Z*cur_kv;
       
-      cur_part.Z[i]   = init_Z + new_Z;
-      cur_part.Znc[i] = new_Z;
+      cur_part_Z[i]   = init_Z + new_Z;
+      cur_part_Znc[i] = new_Z;
       //cur_part.Zc[i]  = 0;
     }
   }
@@ -459,9 +470,11 @@ void Subgroups::addSite(list<Subgroup>& gene_groups, site_ptr site)
   i = gene_groups.begin();
   while (i != gene_groups.end())
   {
+    BindingSite& site_ref = *site;
+    
     /* I check every subgroup. I add the site to the first one that it overlaps or
     coops with. If it coops with additional ones I merge them. */
-    bool condition = i->overlaps(site.get()) || i->checkCoop(site.get());
+    bool condition = i->overlaps(site_ref) || i->checkCoop(site_ref);
     
     if (condition && added==false)
     {

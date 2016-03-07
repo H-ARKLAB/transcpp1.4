@@ -13,6 +13,8 @@
 
 #include "organism.h"
 #include "gene.h"
+#include "TF.h"
+#include "bindings.h"
 #include "mode.h"
 #include "scalefactor.h"
 
@@ -29,6 +31,8 @@ double representing the score of that function */
 class Score
 {
 private:
+  
+  Organism* parent;
   mode_ptr  mode;
   genes_ptr genes;
   
@@ -68,6 +72,7 @@ private:
   void rms();
   void arkim();
   void cc();
+  void rho();
   void sum_slope_squares();
   
   

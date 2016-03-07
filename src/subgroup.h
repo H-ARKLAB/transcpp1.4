@@ -75,10 +75,10 @@ public:
   int                   getLeftBound() const;
   
   // methods
-  bool overlaps(BindingSite*);
+  bool overlaps(BindingSite&);
   bool overlaps(BindingSite*, BindingSite*);
   void sort();
-  bool checkCoop(BindingSite* site);
+  bool checkCoop(BindingSite& site);
   
   void occupancy();
 

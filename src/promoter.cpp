@@ -94,9 +94,9 @@ void Promoter::read(ptree& pt)
   
   if (func_name == "Arrhenius")
   {
-    double_param_ptr qparam(    new Parameter<double>(string(name+" Q"), pt.get_child("Q")));
-    double_param_ptr maxparam(  new Parameter<double>(string(name+" Rmax"), pt.get_child("Rmax")));
-    double_param_ptr thetaparam(new Parameter<double>(string(name+" Theta"), pt.get_child("Theta")));
+    double_param_ptr qparam(    new Parameter<double>(pt.get_child("Q"), string(name+" Q"),"Promoter"));
+    double_param_ptr maxparam(  new Parameter<double>(pt.get_child("Rmax"),string(name+" Rmax"),"Promoter"));
+    double_param_ptr thetaparam(new Parameter<double>(pt.get_child("Theta"),string(name+" Theta"),"Promoter"));
     
     params["Q"]     = qparam;
     params["Rmax"]  = maxparam;
@@ -109,13 +109,9 @@ void Promoter::read(ptree& pt)
   }
   else if (func_name == "Arrhenius2")
   {
-    double_param_ptr qparam(    new Parameter<double>(pt.get_child("Q")));
-    double_param_ptr maxparam(  new Parameter<double>(pt.get_child("Rmax")));
-    double_param_ptr thetaparam(new Parameter<double>(pt.get_child("Theta")));
-    
-    qparam->setParamName("Q");
-    maxparam->setParamName("Rmax");
-    thetaparam->setParamName("Theta");
+    double_param_ptr qparam(    new Parameter<double>(pt.get_child("Q"), string(name+" Q"),"Promoter"));
+    double_param_ptr maxparam(  new Parameter<double>(pt.get_child("Rmax"),string(name+" Rmax"),"Promoter"));
+    double_param_ptr thetaparam(new Parameter<double>(pt.get_child("Theta"),string(name+" Theta"),"Promoter"));
     
     params["Q"]     = qparam;
     params["Rmax"]  = maxparam;
@@ -128,13 +124,9 @@ void Promoter::read(ptree& pt)
   }
   else if (func_name == "Exponential")
   {
-    double_param_ptr qparam(    new Parameter<double>(pt.get_child("Q")));
-    double_param_ptr maxparam(  new Parameter<double>(pt.get_child("Rmax")));
-    double_param_ptr thetaparam(new Parameter<double>(pt.get_child("Theta")));
-    
-    qparam->setParamName("Q");
-    maxparam->setParamName("Rmax");
-    thetaparam->setParamName("Theta");
+    double_param_ptr qparam(    new Parameter<double>(pt.get_child("Q"), string(name+" Q"),"Promoter"));
+    double_param_ptr maxparam(  new Parameter<double>(pt.get_child("Rmax"),string(name+" Rmax"),"Promoter"));
+    double_param_ptr thetaparam(new Parameter<double>(pt.get_child("Theta"),string(name+" Theta"),"Promoter"));
     
     params["Q"]     = qparam;
     params["Rmax"]  = maxparam;
@@ -148,11 +140,8 @@ void Promoter::read(ptree& pt)
   }
   else if (func_name == "Linear")
   {
-    double_param_ptr Aparam(  new Parameter<double>(pt.get_child("A")));
-    double_param_ptr Bparam(  new Parameter<double>(pt.get_child("B")));
-    
-    Aparam->setParamName("Q");
-    Bparam->setParamName("Q");
+    double_param_ptr Aparam(  new Parameter<double>(pt.get_child("A"),"A","Promoter"));
+    double_param_ptr Bparam(  new Parameter<double>(pt.get_child("B"),"A","Promoter"));
     
     params["A"]  = Aparam;
     params["B"]  = Bparam;

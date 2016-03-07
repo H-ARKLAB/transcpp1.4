@@ -224,12 +224,22 @@ void PWM::PFM2PSSM()
 void PWM::calc_max_score()
 {
   int pwmlen = mat.size();
+  consensus.resize(pwmlen);
   maxscore = 0;
   for (int i=0; i<pwmlen; i++)
   {
+    int    pconsensus   = 0;
     double position_max = 0;
+    
     for (int j=0; j<4; j++)
-      position_max = max(position_max, mat[i][j]);
+    {
+      if (mat[i][j] > position_max)
+      {
+        position_max = mat[i][j];
+        pconsensus = j;
+      }
+    }
+    consensus[i] = pconsensus;
     maxscore += position_max;
   }
 }
