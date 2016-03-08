@@ -57,6 +57,7 @@ public:
   bool getHH() { return HH; }
   bool getHT() { return HT; }
   bool getTT() { return TT; }
+  double_param_ptr getKcoopParam() { return Kcoop; }
   
   // Setters
   void setTFs(string a, string b) { factor1=a; factor2=b;}

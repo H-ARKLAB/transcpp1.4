@@ -72,6 +72,7 @@ public:
   void getAllParameters(param_ptr_vector& p);
   seq_param_ptr      getSequenceParam() { return sequence; }
   promoter_ptr       getPromoter()      { return promoter; }
+  
   // setters
   void setWeight(double weight) { this->weight = weight; }
   void setSequence(vector<int>  s);

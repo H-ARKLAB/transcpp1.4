@@ -53,10 +53,11 @@ public:
   void   getAllParameters(param_ptr_vector& p);
   distance_ptr getDist() {return dist; }
   
-  string& getActor()  { return actor; }
-  string& getTarget() { return target; }
+  string& getActor()      { return actor; }
+  string& getTarget()     { return target; }
   double  getEfficiency() { return efficiency->getValue(); }
   int     getIdx()        { return coef_idx; }
+  double_param_ptr getEfficiencyParam() { return efficiency; }
   
   double distFunc(double d) { return dist->getDistFunc(d); }
   double getMaxDistance()   { return dist->getMaxDistance(); }

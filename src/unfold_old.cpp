@@ -55,6 +55,7 @@ map<string,string> ligand_map()
 
 void print_xml(Organism& organism, string& section)
 {
+  mode_ptr mode = organism.getMode();
   ptree out;
   ptree& system_node = out.add("System","");
   
@@ -73,6 +74,13 @@ void print_xml(Organism& organism, string& section)
   ptree& nnuc_node = paramlist_node.add("Param", "");
   nnuc_node.put("<xmlattr>.name","NoNuclei");
   nnuc_node.put("<xmlattr>.value",nnuc);
+  
+  ptree& af_node = paramlist_node.add("Param", "");
+  af_node.put("<xmlattr>.name","BindingAffinity");
+  af_node.put("<xmlattr>.value"     ,"");
+  af_node.put("<xmlattr>.limit_low" ,1);
+  af_node.put("<xmlattr>.limit_high",1);
+  af_node.put("<xmlattr>.tweak"     ,0);
   
   ptree& fgf_node = paramlist_node.add("Param", "");
   fgf_node.put("<xmlattr>.name","Fgf");
@@ -153,9 +161,9 @@ void print_xml(Organism& organism, string& section)
     {
       ptree& quench_node = lparamlist_node.add("Param","");
       quench_node.put("<xmlattr>.name", "QuenchingCoef");
-      quench_node.put("<xmlattr>.value",      coefs[0]);
-      quench_node.put("<xmlattr>.limit_low",  coef_ptrs[0]->getLimLow());
-      quench_node.put("<xmlattr>.limit_high", coef_ptrs[0]->getLimHigh());
+      quench_node.put("<xmlattr>.value",      -coefs[0]);
+      quench_node.put("<xmlattr>.limit_low",  -coef_ptrs[0]->getLimLow());
+      quench_node.put("<xmlattr>.limit_high", -coef_ptrs[0]->getLimHigh());
       quench_node.put("<xmlattr>.tweak",      (int) coef_ptrs[0]->isAnnealed());
       
       ptree& qd_node = lparamlist_node.add("Param","");
@@ -197,9 +205,9 @@ void print_xml(Organism& organism, string& section)
     {
       ptree& quench_node = lparamlist_node.add("Param","");
       quench_node.put("<xmlattr>.name",       "QuenchingCoef");
-      quench_node.put("<xmlattr>.value",      coefs[0]);
-      quench_node.put("<xmlattr>.limit_low",  coef_ptrs[0]->getLimLow());
-      quench_node.put("<xmlattr>.limit_high", coef_ptrs[0]->getLimHigh());
+      quench_node.put("<xmlattr>.value",      -coefs[0]);
+      quench_node.put("<xmlattr>.limit_low",  -coef_ptrs[0]->getLimLow());
+      quench_node.put("<xmlattr>.limit_high", -coef_ptrs[0]->getLimHigh());
       quench_node.put("<xmlattr>.tweak",      (int) coef_ptrs[0]->isAnnealed());
       
       ptree& qd_node = lparamlist_node.add("Param","");
@@ -219,51 +227,67 @@ void print_xml(Organism& organism, string& section)
       ptree& drep_node = lparamlist_node.add("Param","");
       drep_node.put("<xmlattr>.name",      "DirectRepressionCoef");
       drep_node.put("<xmlattr>.value",     0);
-      qdd_node.put("<xmlattr>.limit_low",  0);
-      qdd_node.put("<xmlattr>.limit_high", 0);
-      qdd_node.put("<xmlattr>.tweak",      0);
+      drep_node.put("<xmlattr>.limit_low",  0);
+      drep_node.put("<xmlattr>.limit_high", 0);
+      drep_node.put("<xmlattr>.tweak",      0);
       
       ptree& dd_node = lparamlist_node.add("Param","");
       dd_node.put("<xmlattr>.name", "DirectRepDistance");
       dd_node.put("<xmlattr>.value", 100);
-      qdd_node.put("<xmlattr>.limit_low",  50);
-      qdd_node.put("<xmlattr>.limit_high", 500);
-      qdd_node.put("<xmlattr>.tweak",      0);
+      dd_node.put("<xmlattr>.limit_low",  50);
+      dd_node.put("<xmlattr>.limit_high", 500);
+      dd_node.put("<xmlattr>.tweak",      0);
       
       ptree& ddd_node = lparamlist_node.add("Param","");
       ddd_node.put("<xmlattr>.name",       "DirectRepDistanceDelta");
       ddd_node.put("<xmlattr>.value",      50);
-      qdd_node.put("<xmlattr>.limit_low",  50);
-      qdd_node.put("<xmlattr>.limit_high", 50);
-      qdd_node.put("<xmlattr>.tweak",      0);
+      ddd_node.put("<xmlattr>.limit_low",  50);
+      ddd_node.put("<xmlattr>.limit_high", 50);
+      ddd_node.put("<xmlattr>.tweak",      0);
       
       ptree& act_node = lparamlist_node.add("Param","");
       act_node.put("<xmlattr>.name",       "ActivationCoef");
       act_node.put("<xmlattr>.value",      coefs[1]);
-      qdd_node.put("<xmlattr>.limit_low",  coef_ptrs[1]->getLimLow());
-      qdd_node.put("<xmlattr>.limit_high", coef_ptrs[1]->getLimHigh());
-      qdd_node.put("<xmlattr>.tweak",      (int) coef_ptrs[1]->isAnnealed());
+      act_node.put("<xmlattr>.limit_low",  coef_ptrs[1]->getLimLow());
+      act_node.put("<xmlattr>.limit_high", coef_ptrs[1]->getLimHigh());
+      act_node.put("<xmlattr>.tweak",      (int) coef_ptrs[1]->isAnnealed());
     
     }
     
     ptree& kmax_node = lparamlist_node.add("Param","");
-    kmax_node.put("<xmlattr>.name", "k_max");
-    kmax_node.put("<xmlattr>.value", tf.getKmax());
+    double_param_ptr kmax_param = tf.getKmaxParam();
+    kmax_node.put("<xmlattr>.name",       "k_max");
+    kmax_node.put("<xmlattr>.value",      kmax_param->getValue());
+    kmax_node.put("<xmlattr>.limit_low",  kmax_param->getLimLow());
+    kmax_node.put("<xmlattr>.limit_high", kmax_param->getLimHigh());
+    kmax_node.put("<xmlattr>.tweak",      (int) kmax_param->isAnnealed());
     
     ptree& lambda_node = lparamlist_node.add("Param","");
-    lambda_node.put("<xmlattr>.name", "lambda");
-    lambda_node.put("<xmlattr>.value", tf.getLambda());
+    double_param_ptr lambda_param = tf.getLambdaParam();
+    lambda_node.put("<xmlattr>.name",       "lambda");
+    lambda_node.put("<xmlattr>.value",      lambda_param->getValue());
+    lambda_node.put("<xmlattr>.limit_low",  lambda_param->getLimLow());
+    lambda_node.put("<xmlattr>.limit_high", lambda_param->getLimHigh());
+    lambda_node.put("<xmlattr>.tweak",      (int) lambda_param->isAnnealed());
     
     ptree& threshold_node = lparamlist_node.add("Param","");
-    threshold_node.put("<xmlattr>.name", "threshold");
-    threshold_node.put("<xmlattr>.value", tf.getThreshold());
+    double_param_ptr threshold_param = tf.getThresholdParam();
+    threshold_node.put("<xmlattr>.name",       "threshold");
+    threshold_node.put("<xmlattr>.value",      threshold_param->getValue());
+    threshold_node.put("<xmlattr>.limit_low",  threshold_param->getLimLow());
+    threshold_node.put("<xmlattr>.limit_high", threshold_param->getLimHigh());
+    threshold_node.put("<xmlattr>.tweak",      (int) threshold_param->isAnnealed());
     
     ptree& weightmatrix_node = ligand_node.add("WeightMatrix","");
     weightmatrix_node.put("<xmlattr>.name", tf.getName());
     weightmatrix_node.put("<xmlattr>.bsize", tf.getBindingSize());
     weightmatrix_node.put("<xmlattr>.pseudo", 1);
+    weightmatrix_node.put("<xmlattr>.type", "Align");
     
-    vector<vector<double> > pwm = tf.getPWMParam()->getValue().getPWM(PCM);
+    pwm_param_ptr pwmparam = tf.getPWMParam();
+    weightmatrix_node.put("<xmlattr>.maxscore", pwmparam->getValue().getMaxScore());
+    weightmatrix_node.put("<xmlattr>.minscore", 0);
+    vector<vector<double> > pwm = pwmparam->getValue().getPWM(PCM);
     int pwmlen = pwm.size();
     for (int j=0; j<pwmlen; j++)
     {
@@ -288,16 +312,28 @@ void print_xml(Organism& organism, string& section)
     
     ptree& cparamlist = coop_node.add("ParamList","");
     ptree& kcoop = cparamlist.add("Param","");
-    kcoop.put("<xmlattr>.name", "Kcoop");
-    kcoop.put("<xmlattr>.value", coops[i]->getK());
+    double_param_ptr kcoopparam = coops[i]->getKcoopParam();
+    kcoop.put("<xmlattr>.name",       "Kcoop");
+    kcoop.put("<xmlattr>.value",      kcoopparam->getValue());
+    kcoop.put("<xmlattr>.tweak",      (int) kcoopparam->isAnnealed());
+    kcoop.put("<xmlattr>.limit_high", kcoopparam->getLimHigh());
+    kcoop.put("<xmlattr>.limit_low",  kcoopparam->getLimLow());
     
+    map<string, double_param_ptr>& distparams = coops[i]->getDist()->getParams();
+    double_param_ptr distA = distparams["A"];
     ptree& cd = cparamlist.add("Param","");
-    cd.put("<xmlattr>.name", "CoopDistance");
-    cd.put("<xmlattr>.value", coops[i]->getDist()->getParams()["Max"]);
+    cd.put("<xmlattr>.name",       "CoopDistance");
+    cd.put("<xmlattr>.value",      distA->getValue());
+    cd.put("<xmlattr>.tweak",      (int) distA->isAnnealed());
+    cd.put("<xmlattr>.limit_high", distA->getLimHigh());
+    cd.put("<xmlattr>.limit_low",  distA->getLimLow());
     
     ptree& cdd = cparamlist.add("Param","");
     cdd.put("<xmlattr>.name", "CoopDistanceDelta");
     cdd.put("<xmlattr>.value", 10);
+    cdd.put("<xmlattr>.tweak", 0);
+    cdd.put("<xmlattr>.limit_high", 10);
+    cdd.put("<xmlattr>.limit_low", 10);
   }
   
   vector<coeffect_ptr>& coeffects = organism.getCoeffects()->getAllCoeffects();
@@ -310,19 +346,114 @@ void print_xml(Organism& organism, string& section)
     coop_node.put("<xmlattr>.action_type", 0);
     coop_node.put("<xmlattr>.include", 1);
     
+    double_param_ptr eff = coeffects[i]->getEfficiencyParam();
     ptree& cparamlist = coop_node.add("ParamList","");
     ptree& kcoop = cparamlist.add("Param","");
     kcoop.put("<xmlattr>.name", "CoactCoef");
     kcoop.put("<xmlattr>.value", coeffects[i]->getEfficiency());
+    kcoop.put("<xmlattr>.tweak", (int) eff->isAnnealed());
+    kcoop.put("<xmlattr>.limit_high", eff->getLimHigh());
+    kcoop.put("<xmlattr>.limit_low", eff->getLimLow());
+    
+    map<string, double_param_ptr>& distparams = coeffects[i]->getDist()->getParams();
+    double_param_ptr distA = distparams["A"];
+    double_param_ptr distB = distparams["B"];
     
     ptree& cd = cparamlist.add("Param","");
     cd.put("<xmlattr>.name", "CoactDistance");
-    cd.put("<xmlattr>.value", coeffects[i]->getDist()->getParams()["A"]);
+    cd.put("<xmlattr>.value",      distA->getValue());
+    cd.put("<xmlattr>.tweak",      (int) distA->isAnnealed());
+    cd.put("<xmlattr>.limit_high", distA->getLimHigh());
+    cd.put("<xmlattr>.limit_low",  distA->getLimLow());
     
     ptree& cdd = cparamlist.add("Param","");
     cdd.put("<xmlattr>.name", "CoactDistanceDelta");
-    cdd.put("<xmlattr>.value", coeffects[i]->getDist()->getParams()["A"]);
+    cdd.put("<xmlattr>.value",      distB->getValue());
+    cdd.put("<xmlattr>.tweak",      (int) distB->isAnnealed());
+    cdd.put("<xmlattr>.limit_high", distB->getLimHigh());
+    cdd.put("<xmlattr>.limit_low",  distB->getLimLow());
   }
+  
+  ptree& mode_node = paramset_node.add("Mode","");
+  mode_node.add("<xmlattr>.dynamic",1);
+  mode_node.add("<xmlattr>.overlappingQuench",0);
+  mode_node.add("<xmlattr>.overlappingCoact",0);
+  mode_node.add("<xmlattr>.directRepression",0);
+  mode_node.add("<xmlattr>.cooperativity",1);
+  mode_node.add("<xmlattr>.scaledChisq",1);
+  mode_node.add("<xmlattr>.showGroups",0);
+  mode_node.add("<xmlattr>.appcomp",0);
+  mode_node.add("<xmlattr>.SmoothTxnrate",1);
+  mode_node.add("<xmlattr>.hilde",0);
+  mode_node.add("<xmlattr>.random",0);
+  
+  table_ptr ratedata = organism.getRateData();
+  ptree& constructlist_node = paramset_node.add("ConstructList","");
+  int ngenes = genes->size();
+  vector<string>& lins = ratedata->getRowNames();
+  for (int i = 0; i<ngenes; i++)
+  {
+    ptree& construct_node = constructlist_node.add("Construct","");
+    Gene& gene = genes->getGene(i);
+    construct_node.put("<xmlattr>.genotype", gene.getName());
+    construct_node.put("<xmlattr>.include",  (int) gene.getInclude());
+    
+    scale_factor_ptr scale = gene.getScale();
+    double_param_ptr scaleA = scale->getA();
+    ptree& scale_node = construct_node.add("PositionEffect","");
+    scale_node.put("<xmlattr>.scale_factor",scaleA->getValue());
+    scale_node.put("<xmlattr>.limit_low",   scaleA->getLimLow());
+    scale_node.put("<xmlattr>.limit_high",  scaleA->getLimHigh());
+    scale_node.put("<xmlattr>.tweak",       (int) scaleA->isAnnealed());
+    
+    ptree& seq_node = construct_node.add("Sequence","");
+    seq_node.put("<xmlattr>.left_bound", gene.getLeftBound());
+    seq_node.put("<xmlattr>.right_bound", gene.getRightBound());
+    seq_node.put("<xmlattr>.AT_bkgd", 1-mode->getGC()/2);
+    seq_node.put("<xmlattr>.CG_bkgd", mode->getGC()/2);
+    seq_node.put("<xmlattr>.tweak", (int) gene.getSequenceParam()->isAnnealed());
+    seq_node.put("", gene.getSequenceString());
+    
+    ptree& sitelist_node = construct_node.add("BindingSiteList","");
+    
+    vector<double*>& col = ratedata->getCol(gene.getName());
+    ptree& conclist_node = construct_node.add("MrnaConcList","");
+    conclist_node.put("<xmlattr>.timepoint", 85.175000);
+    int nrow = lins.size();
+    for (int j=0; j<nrow; j++)
+    {
+      ptree& conc_node = conclist_node.add("MrnaConc","");
+      conc_node.put("<xmlattr>.lin",  lins[j]);
+      conc_node.put("<xmlattr>.conc", *(col[j]));
+    }
+      
+    
+    
+  }
+  ptree& data_node = system_node.add("Data","");
+  ptree& ligandconclist_node = data_node.add("LigandConcList","");
+  ligandconclist_node.put("<xmlattr>.timepoint", 85.175000);
+  int nlins = lins.size();
+  table_ptr tfdata = organism.getTFData();
+  vector<string>& tfnames = tfdata->getColNames();
+  int ntfdata = tfnames.size();
+  for (int i=0; i<nlins; i++)
+  {
+    ptree& ligandconc_node = ligandconclist_node.add("LigandConc","");
+    ligandconc_node.put("<xmlattr>.lin", lins[i]);
+    for (int j=0; j<ntfdata; j++)
+    {
+      string name = tfnames[j];
+      string id = m[name];
+      ligandconc_node.put("<xmlattr>."+id, tfdata->getDataPoint("ID",lins[i],"TF",tfnames[j]));
+      //cerr << "ID: " << lins[i] << endl;
+      //cerr << "TF: " << tfnames[j] << endl;
+      //cerr << "data: " << tfdata->getDataPoint("ID",lins[i],"TF",tfnames[j]) << endl;
+    }
+  }
+    
+    
+    
   
 #if BOOST_VERSION / 100 % 1000 < 56
   write_xml_element(cout, 

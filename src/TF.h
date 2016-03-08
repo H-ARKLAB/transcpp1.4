@@ -87,6 +87,8 @@ public:
   
   vector<double_param_ptr>& getCoefPtrs() {return coefs; }
   double_param_ptr getThresholdParam() { return threshold; }
+  double_param_ptr getLambdaParam()    { return lambda; }
+  double_param_ptr getKmaxParam()      { return kmax; }
   pwm_param_ptr    getPWMParam()       { return energy;    }
   
   vector< pair<TF*, coeffect_ptr> >& getTargets() { return coeffects; }   
