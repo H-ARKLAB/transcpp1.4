@@ -26,7 +26,6 @@ Parameter<T>::Parameter()
 {
   anneal        = false;
   tf_name_set   = false;
-  seed          = 1;
   param_name    = "not set";
   move_func     = "ResetAll";
   out_of_bounds = false;
@@ -38,7 +37,6 @@ Parameter<T>::Parameter(string name, string move)
 {
   anneal        = false;
   tf_name_set   = false;
-  seed          = 1;
   param_name    = name;
   move_func     = move;
   out_of_bounds = false;
@@ -48,7 +46,6 @@ Parameter<T>::Parameter(string name, string move)
 template< typename T> 
 Parameter<T>::Parameter(ptree& pt)
 {
-  seed = 1;
   node = &pt;
   setTypeName();
   read(pt);
@@ -58,7 +55,6 @@ Parameter<T>::Parameter(ptree& pt)
 template< typename T> 
 Parameter<T>::Parameter(string name, ptree& pt)
 {
-  seed       = 1;
   node       = &pt;
   param_name = name;
   setTypeName();
@@ -69,7 +65,6 @@ Parameter<T>::Parameter(string name, ptree& pt)
 template< typename T> 
 Parameter<T>::Parameter(ptree& pt, string name, string move)
 {
-  seed = 1;
   node = &pt;
   setTypeName();
   read(pt);
@@ -189,8 +184,8 @@ void Parameter<Sequence>::tweak(double delta)
   for (int i=0; i<nedits; i++)
   {
     // output = min + (rand_r(seed) % (int)(max - min + 1))
-    int pos  = rand_r(&seed) % length;
-    int base = rand_r(&seed) % (int) 4;
+    int pos  = dist.draw() * length;
+    int base = dist.draw() * 4;
     seq[pos] = base;
   }
 }
@@ -209,8 +204,8 @@ void Parameter<PWM>::tweak(double delta)
   //  cerr << value.getConsensus()[i];
   //cerr << endl;
   
-  int pos1 = rand_r(&seed) % length;
-  int pos2 = rand_r(&seed) % (int) 4;
+  int pos1 = dist.draw() * length;
+  int pos2 = dist.draw() * 4;
   int old_consensus = value.getConsensus()[pos1];
   //cerr << pos2 << endl;
   
@@ -249,10 +244,10 @@ void Parameter<Sequence>::scramble(double rand_uniform)
   vector<int>& seq = value.getSequence();
   int length = seq.size();
   
-  seed = (unsigned int) rand_uniform * 100000;
+  //seed = (unsigned int) rand_uniform * 100000;
   
   for (int i=0; i<length; i++)
-    seq[i] = rand_r(&seed) % (int) 4;
+    seq[i] = dist.draw() * 4;
   
   string char_seq = int2string(seq);
   node->put("<xmlattr>.sequence", char_seq);
@@ -263,7 +258,7 @@ template<>
 void Parameter<PWM>::scramble(double rand_uniform)
 {
   stringstream tmp;
-  seed = (unsigned int) (rand_uniform * 100000);
+  //seed = (unsigned int) (rand_uniform * 100000);
   node->put("<xmlattr>.type","PSSM");
   
   vector<vector<double> > & pwm = value.getPWM();
@@ -276,7 +271,7 @@ void Parameter<PWM>::scramble(double rand_uniform)
       tmp.str("");
   
       for (int i=0; i<4; i++)
-        pwm[pwmpos][i] = -10 + (rand_r(&seed) % 20);
+        pwm[pwmpos][i] = -10 + dist.draw() * 20;
       
       tmp << setw(10) << pwm[pwmpos][0] << ";"
           << setw(10) << pwm[pwmpos][1] << ";"

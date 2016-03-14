@@ -10,6 +10,10 @@
 #ifndef PARAMETER_H
 #define PARAMETER_H
 
+#include <boost/random/linear_congruential.hpp>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/uniform_real.hpp>
+#include <boost/random/variate_generator.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
@@ -33,6 +37,21 @@ To add new parameter types the user must override the functions that operate on
 the value itself, such as the get and set value functions, checkLimits, and tweak
 */
 
+class UnitDblDist
+{
+private:
+  boost::minstd_rand baseGen;
+  boost::uniform_real<> uniDblUnit;
+  boost::variate_generator<boost::minstd_rand&, boost::uniform_real<> > uniDblGen;
+  
+public:
+  UnitDblDist():
+    baseGen(0),uniDblUnit(0,1),uniDblGen(baseGen, uniDblUnit) {}
+  
+  double draw() { return uniDblGen(); }
+};
+    
+
 class ParameterInterface
 {
 protected:
@@ -49,11 +68,14 @@ protected:
   
   bool tf_name_set;
   
-  unsigned int seed;      // seed used for random number generation
+  //unsigned int seed;      // seed used for random number generation
   
   virtual bool checkLimits() = 0;
   void setTypeName();
-
+  
+  // random number generation
+  UnitDblDist dist;
+  
 public:
   
   virtual ~ParameterInterface() {}
