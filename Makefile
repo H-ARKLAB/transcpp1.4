@@ -54,7 +54,7 @@ else
 endif
 
 SOURCE = src/quenching.cpp src/sequence.cpp src/score.cpp src/coeffects.cpp \
-src/cooperativity.cpp src/scalefactr.cpp src/fasta.cpp src/mode.cpp src/pwm.cpp \
+src/cooperativity.cpp src/scalefactor.cpp src/fasta.cpp src/mode.cpp src/pwm.cpp \
 src/TF.cpp src/gene.cpp src/nuclei.cpp src/datatable.cpp src/twobit.cpp \
 src/parameter.cpp src/bindings.cpp src/chromatin.cpp  \
 src/bindingsite.cpp src/distance.cpp src/promoter.cpp \
