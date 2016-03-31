@@ -30,19 +30,15 @@ using boost::property_tree::ptree;
 /*      Constructors    */
 
 TF::TF():
-  energy(pwm_param_ptr(new Parameter<PWM>("PWM","PWM"))),
   kmax(double_param_ptr(new Parameter<double>("Kmax","Kmax"))),
   threshold(double_param_ptr(new Parameter<double>("Threshold","Sites"))),
-  lambda(double_param_ptr(new Parameter<double>("Lambda","Lambda"))),
-  pwm_offset(double_param_ptr(new Parameter<double>("PWMOffset","ResetAll")))
-  
+  lambda(double_param_ptr(new Parameter<double>("Lambda","Lambda")))
 {
   // initialize all the member variables
   index  = 0;
   bsize  = 0;
   offset = 0;
   Kns    = 0;
-  pwm_offset->set(0);
   double_param_ptr coef(new Parameter<double>());
   coef->setParamName("coef");
   coef->set(0.0);
@@ -56,11 +52,9 @@ TF::TF():
 }
 
 TF::TF(ptree& pt, mode_ptr m):
-  energy(pwm_param_ptr(new Parameter<PWM>("PWM","PWM"))),
   kmax(double_param_ptr(new Parameter<double>("Kmax","Kmax"))),
   threshold(double_param_ptr(new Parameter<double>("Threshold","Sites"))),
-  lambda(double_param_ptr(new Parameter<double>("Lambda","Lambda"))),
-  pwm_offset(double_param_ptr(new Parameter<double>("PWMOffset","ResetAll")))
+  lambda(double_param_ptr(new Parameter<double>("Lambda","Lambda")))
 {
   mode = m;
   set(pt);
@@ -100,23 +94,12 @@ void TF::set(ptree& pt)
   lambda->read(lambda_node);
   lambda->setTFName(tfname);
   
-  if (pt.count("pwm_offset") == 0)
-    pwm_offset->set(0);
-  else
-  {
-    ptree& pwm_offset_node = pt.get_child("pwm_offset");
-    pwm_offset->read(pwm_offset_node);
-  }
-  pwm_offset->setTFName(tfname);
-    
-  ptree& pwm_node = pt.get_child("PWM");
-  readPWM(pwm_node);
+  readPWM(pt);
   
   double pThresh = mode->getPThresh();
   if (pThresh)
   {
-    PWM& pwm = energy->getValue();
-    threshold->set(pwm.pval2score(pThresh));
+    threshold->set(energy.pval2score(pThresh));
     threshold->setAnnealed(false);
     //cerr << pThresh << " p-value cuttoff for " << tfname << " is " << threshold->getValue() << endl; 
   }
@@ -124,63 +107,12 @@ void TF::set(ptree& pt)
   
 }
 
-void TF::readPWM(ptree& pwm_node)
+void TF::readPWM(ptree& tf_node)
 {
-  // first read in the pwm
-  string            token;
-  vector<double> line;
+  energy.setMode(mode);
+  energy.setTFName(tfname);
+  energy.read(tf_node);
   
-  string pwm_source = pwm_node.get<string>("<xmlattr>.source","");
-  double gc         = pwm_node.get<double>("<xmlattr>.gc", mode->getGC());
-  
-  energy->setAnnealed(pwm_node.get<bool>("<xmlattr>.anneal", false));
-  energy->setParamName(tfname + "_pwm");
-  energy->setNode(&pwm_node);
-  energy->setTFName(tfname);
-  
-  PWM& pwm = energy->getValue();
-  double pseudo = pwm_node.get<double>("<xmlattr>.pseudo", 1.0);
-  pwm.setGC(gc);
-  pwm.setPseudo(pseudo);
-  pwm.setSource(pwm_source);
-  
-  vector<vector<double> > mat;
-  
-  foreach_(ptree::value_type const& v, pwm_node)
-  {
-    if (v.first == "position")
-    {
-    line.clear();
-    
-    stringstream s(v.second.data());
-      
-
-    while( getline(s, token, ';'))
-    {
-      line.push_back(atof(token.c_str()));
-    }
-    line.push_back(0);
-    
-    mat.push_back(line);
-    }
-  }
-  
-  string type = pwm_node.get<string>("<xmlattr>.type");
-  if (type == "PCM")
-    pwm.setPWM(mat, PCM);
-  else if (type == "PFM")
-    pwm.setPWM(mat, PFM);
-  else if (type == "PSSM")
-    pwm.setPWM(mat, PSSM);
-  else if (type == "BEM")
-    pwm.setPWM(mat, PSSM);
-  else
-  {
-    stringstream err;
-    err << "ERROR: readPWM() did not recognize pwm of type " << type << endl;
-    error(err.str());
-  }
-  pwm.setNscore();
 }
     
 
@@ -192,14 +124,12 @@ void TF::setName(string n) { tfname = n; }
 
 void TF::setPWM(vector<vector<double> >& t, int type) // use default gc=0.25, pseudo=1
 {
-  PWM& pwm = energy->getValue();
-  pwm.setPWM(t, type);
+  energy.setPWM(t, type);
 }
 
 void TF::setPWM(vector<vector<double> >& t, int type, double gc, double pseudo)
 {
-  PWM& pwm = energy->getValue();
-  pwm.setPWM(t, type, gc, pseudo);
+  energy.setPWM(t, type, gc, pseudo);
 }
  
 void TF::setKmax(double k) { kmax->set(k); }
@@ -286,10 +216,9 @@ vector<double> TF::getCoefs()
 
 double TF::getLambda() { return lambda->getValue(); }
 
-double TF::getMaxScore() const 
+double TF::getMaxScore()  
 { 
-  PWM& pwm = energy->getValue();
-  return pwm.getMaxScore(); 
+  return energy.getMaxScore(); 
 }
 
 int TF::getBindingSize() const { return bsize; }
@@ -302,8 +231,6 @@ void TF::getParameters(param_ptr_vector& p)
     p.push_back(threshold);
   if (lambda->isAnnealed())
     p.push_back(lambda);
-  if (pwm_offset->isAnnealed())
-    p.push_back(pwm_offset);
   
   int ncoefs = coefs.size();
   for (int i=0; i<ncoefs; i++)
@@ -312,8 +239,7 @@ void TF::getParameters(param_ptr_vector& p)
       p.push_back(coefs[i]);
   }
   
-  if (energy->isAnnealed())
-    p.push_back(energy);
+  energy.getParameters(p);
 
 }
 
@@ -322,13 +248,12 @@ void TF::getAllParameters(param_ptr_vector& p)
   p.push_back(kmax);
   p.push_back(threshold);
   p.push_back(lambda);
-  p.push_back(pwm_offset);
   
   int ncoefs = coefs.size();
   for (int i=0; i<ncoefs; i++)
     p.push_back(coefs[i]);
 
-  p.push_back(energy);
+  energy.getAllParameters(p);
   
 }
 
@@ -388,8 +313,8 @@ coop_ptr TF::getCoop(TF* t)
 
 void TF::score(const vector<int>& s, TFscore &t)
 {
-  PWM& pwm = energy->getValue();
-  pwm.score(s,t);
+  //PWM& pwm = energy->getValue();
+  energy.score(s,t);
 }
 
     
@@ -411,40 +336,6 @@ TFscore TF::score(const string & s)
 
 /*    print   */
 
-void TF::print(ostream& os) 
-{
-  vector< vector<double> >& pwm = energy->getValue().getPWM();
-  int w;
-  int i,j;
-  w = 8;
-  os << setprecision(4);
-  os << "Transcription Factor" << endl
-     << "name: "   << tfname   << endl
-     << "kmax: "   << kmax->getValue() << endl
-     << "lambda: " << lambda->getValue()   << endl
-     << "bsize: "  << bsize    << endl
-     << "threshold: " << threshold->getValue() << endl
-     << "maxscore: " << energy->getValue().getMaxScore() << endl
-     << setw(w) << ""
-     << setw(w) << "A"
-     << setw(w) << "C"
-     << setw(w) << "G"
-     << setw(w) << "T"
-     << setw(w) << "N"
-     << endl;
-     
-  int pwmlen = pwm.size();
-  for (i=0; i<pwmlen; i++)
-  {
-    os << setprecision(3);
-    os << setw(w) << i+1;
-    for (j=0; j<5; j++)
-    {
-      os << setw(w) << pwm[i][j];
-    }
-    os << endl;
-  }
-}
 
 void TF::write(ostream& os) 
 {
@@ -466,11 +357,10 @@ void TF::write(ostream& os)
 #endif
 }
 
+
 void TF::write(ptree& tfsnode) 
 {
-  int i;
   int p = mode->getPrecision();
-  int w = p + 7;
   stringstream tmp;
   tmp << setprecision(p);
   
@@ -480,22 +370,11 @@ void TF::write(ptree& tfsnode)
   ptree & kmax_node      = tfnode.add("kmax          ","");
   kmax->write(kmax_node, mode->getPrecision());
   
-  // convert thresholds back if we are printing a different type
-  PWM& pwm = energy->getValue();
-  
-  int input_type = pwm.getInputType();
-  
   ptree & threshold_node  = tfnode.add("threshold     ","");
   threshold->write(threshold_node, mode->getPrecision());
 
   ptree & lambda_node     = tfnode.add("lambda        ","");
   lambda->write(lambda_node, mode->getPrecision());
-  
-  if (pwm_offset->isAnnealed() || pwm_offset->getValue() != 0)
-  {
-    ptree & pwm_offset_node = tfnode.add("pwm_offset    ","");
-    pwm_offset->write(pwm_offset_node, mode->getPrecision());
-  }
   
   ptree& coefs_node = tfnode.add("Coefficients", "");
   int ncoefs = coefs.size();
@@ -508,68 +387,7 @@ void TF::write(ptree& tfsnode)
   tfnode.put("<xmlattr>.bsize",   bsize);
   tfnode.put("<xmlattr>.include", "true");
   
-  
-  ptree & pwmnode = tfnode.add("PWM","");
-  //pwm.print(cerr, 2);
-  
-  if (energy->isAnnealed())
-    input_type = PSSM;
-  
-  switch (input_type)
-  {
-  case PCM:
-    pwmnode.put("<xmlattr>.type","PCM");
-    pwmnode.put("<xmlattr>.pseudo", pwm.getPseudo());
-    break;
-  case PFM:
-    pwmnode.put("<xmlattr>.type","PFM");
-    break;
-  case PSSM:
-    pwmnode.put("<xmlattr>.type","PSSM");
-    break;
-  case BEM:
-    pwmnode.put("<xmlattr>.type","PSSM");
-    break;
-  default:
-    error("TF::write() unrecognized pwm type");
-    break;
-  }
-    
-  if (energy->isAnnealed())
-    pwmnode.put("<xmlattr>.anneal", "true");
-  if (pwm.getSource() != string(""))
-    pwmnode.put("<xmlattr>.source", pwm.getSource());
-  if (pwm.getGC() != mode->getGC())
-    pwmnode.put("<xmlattr>.gc", pwm.getGC());
-  
-  tmp.str("");
-  tmp << setw(w+1) << "A"
-      << setw(w+1) << "C"
-      << setw(w+1) << "G"
-      << setw(w+1) << "T";
-  pwmnode.add("base   ", tmp.str());
-  vector< vector<double> > mat = pwm.getPWM(input_type);
-  int pwmlen=mat.size();
-
-  for (i=0; i<pwmlen; i++)
-  {
-    tmp.str("");
-    if (input_type == PCM)
-    {
-      int zeros = (int) pow(10.0,p);
-      for (int j=0; j<4; j++)
-      {
-        if (mat[i][j] < 0)
-          mat[i][j] = 0.0;
-        mat[i][j] = roundf(mat[i][j] * zeros) / zeros;
-      }
-    }
-    tmp << setw(w) << mat[i][0] << ";"
-        << setw(w) << mat[i][1] << ";"
-        << setw(w) << mat[i][2] << ";"
-        << setw(w) << mat[i][3];
-    pwmnode.add("position",tmp.str());
-  }
+  energy.write(tfnode);
 }
   
     
@@ -625,7 +443,7 @@ tf_ptr TFContainer::getTFptr(const string& n)
   }
   // if we are here TF was not found
   stringstream err;
-  err << "ERROF: getTF() TF with name " << n << " not found" << endl;
+  err << "ERROF: getTFptr() TF with name " << n << " not found" << endl;
   error(err.str());
   return tfs[0]; // you will never get here!
 }

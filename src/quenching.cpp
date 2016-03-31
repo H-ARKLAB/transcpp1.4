@@ -493,6 +493,64 @@ void ModifyingInteractions
     }
   }
 }
+
+// [target][actor][nuc]
+map<BindingSite*, map<TF*, vector<double> > > ModifyingInteractions::getEffq(Gene& gene)
+{
+  map<BindingSite*, map<TF*, vector<double> > > out;
+  gene_mods& gmods = *(mods[&gene]);
+  int ntfs   = tfs->size();
+  for (int i = 0; i<ntfs; i++) // loop through actors
+  {
+    TF& tf1 = tfs->getTF(i);
+    vector< pair<TF*, coeffect_ptr> >& targets = tf1.getTargets();
+    int ntargets = targets.size();
+    for (int j=0; j<ntargets; j++) // loop through targets
+    {
+      pair<TF*, coeffect_ptr>& tmp_pair = targets[j];
+      TF&          tf2      = *(tmp_pair.first);
+      coeffect_ptr cur_coef = tmp_pair.second;
+      
+      vector<ModifyingInteraction>& mod_vector = gmods[&tf1][&tf2];
+      
+      double efficiency = cur_coef->getEfficiency();
+      int    coef_idx   = cur_coef->getIdx() - 1;
+      
+      int nmods = mod_vector.size();
+      
+      for (int k=0; k<nmods; k++)
+      {
+      
+        ModifyingInteraction& mod = mod_vector[k];
+        BindingSite& actor_site   = *mod.actor;
+        BindingSite& target_site  = *mod.target;
+        double distcoef           = mod.distcoef;
+        
+        vector<double>& actor_occupancy = actor_site.total_occupancy;
+        vector<double>& start_occupancy = target_site.mode_occupancy[0];
+        vector<double>& end_occupancy   = target_site.mode_occupancy[coef_idx];
+        
+        int n = actor_occupancy.size();
+
+        if (out[&target_site][&tf1].size() == 0)
+        {
+          out[&target_site][&tf1].resize(n);
+          for (int l=0; l<n; l++) 
+            out[&target_site][&tf1][l] = 1.0;
+        }
+        
+        for (int l=0; l<n; l++)
+        {
+          double reduction = actor_occupancy[l] * efficiency * distcoef;
+          out[&target_site][&tf1][l] *= reduction;
+          
+        }
+      }
+    }
+  }
+  return out;
+}
+  
         
 void ModifyingInteractions
 ::calc()

@@ -75,7 +75,7 @@ private:
   //bool hasSites(Gene&, TF&);
   void createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
                   int pos, double bsize, double score, char orientation, 
-                  double lambda, double offset, double kmax, double maxscore,
+                  double lambda, double kmax, double maxscore,
                   vector<double>& v, int nmodes, double kns);
   
   void trimOverlaps();
@@ -97,6 +97,7 @@ public:
   tfs_ptr getTFs()      { return tfs   ; }
 
   // Setters
+  void setMasterBindingIdx();
   void setGenes(genes_ptr g);
   void setTFs(tfs_ptr t)             {tfs       = t; }
   void setTFData(table_ptr c)        {tfdata    = c; }

@@ -425,6 +425,48 @@ plot_f <- function(object, type, setdim, opts)
   }
 }
 
+get_f_matrix <- function(object, gene, tf)
+{
+  f        <- object$f
+  gene_f   <- f[[gene]]
+  gnames   <- object$gene_names
+  tfnames  <- object$tf_names
+  nucnames <- object$nuc_names
+  nnuc     <- length(nucnames)
+  bindings <- object$bindings[[gene]]
+  g        <- object$genes[[gene]]
+  l        <- g$length
+  left     <- g$left_bound
+  mat      <- matrix(nrow=nnuc, ncol=l, data=0)
+  
+  tf_bindings <- bindings[which(bindings$tf==tf),]
+  nmodes <- length(object$tfs[[tf]]$coefs)
+  
+  for (m in 1:nmodes)
+  {
+    n <- tf
+    if (m>1)
+      n <- paste0(n, m-1)
+      
+    tf_f <- gene_f[[n]]
+    ntf_bindings <- nrow(tf_bindings)
+    if (ntf_bindings>0)
+    {
+      for (k in 1:ntf_bindings)
+      {
+        site <- tf_bindings[k,]
+        start <- site$start - left + 1;
+        end   <- site$end   - left + 1;
+        start <- max(c(start, 1))
+        end   <- min(c(end, l))
+        occ <- tf_f[,(site$index)]
+        mat[,start:end] <- mat[,start:end] + occ
+      }
+    }
+  }
+  return(mat)
+}
+
 get_F_matrix <- function(object, gene, tf)
 {
   f        <- object$F

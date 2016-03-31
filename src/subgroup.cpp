@@ -10,11 +10,40 @@
 #include <boost/foreach.hpp>
 #include <algorithm>
 #include <limits>
-#include <math.h>
+#include <cmath>
 #include <climits>
 
 #define foreach_ BOOST_FOREACH
 
+// a fast implementation of log2 function, but with reduced precision...
+inline float fast_log2 (float val)
+{
+   register int *const     exp_ptr = ((int*)&val);
+   register int            x = *exp_ptr;
+   register const int      log_2 = ((x >> 23) & 255) - 128;
+   x &= ~(255 << 23);
+   x += 127 << 23;
+   *exp_ptr = x;
+
+   val = ((-1.0f/3) * val + 2) * val - 2.0f/3;
+
+   return ((val + log_2));
+}
+
+//inline float fast_log2 (float val)
+//{
+//   int * const    exp_ptr = reinterpret_cast <int * (&val);
+//   int            x = *exp_ptr;
+//   const int      log_2 = ((x  23) & 255) - 128;
+//   x &= ~(255 << 23);
+//   x += 127 << 23;
+//   *exp_ptr = x;
+//
+//   val = ((-1.0f/3) * val + 2) * val - 2.0f/3;   // (1)
+//
+//   return (val + log_2);
+//}
+      
 /********************************   Subgroup    *********************************/
 
 
@@ -173,6 +202,20 @@ void Subgroup::pre_process()
   ZF.resize(nsites+1);
   ZR.resize(nsites+1);
     
+#ifdef VERYLARGENUMS
+  ZF[0].log_Z.resize(nnuc);
+  ZF[0].log_Zc.resize(nnuc);
+  ZF[0].log_Znc.resize(nnuc);
+  
+  ZR[0].log_Z.resize(nnuc);
+  ZR[0].log_Zc.resize(nnuc);
+  ZR[0].log_Znc.resize(nnuc);
+  for (int i=0; i<nnuc; i++)
+  {
+    ZF[0].log_Z[i] = 0;
+    ZR[0].log_Z[i] = 0;
+  }
+#else  
   ZF[0].Z.resize(nnuc);
   ZF[0].Zc.resize(nnuc);
   ZF[0].Znc.resize(nnuc);
@@ -180,18 +223,26 @@ void Subgroup::pre_process()
   ZR[0].Z.resize(nnuc);
   ZR[0].Zc.resize(nnuc);
   ZR[0].Znc.resize(nnuc);
-  
   for (int i=0; i<nnuc; i++)
   {
     ZF[0].Z[i] = 1.0;
     ZR[0].Z[i] = 1.0;
   }
-    
+#endif
   
   for (int i=0; i<nsites; i++) // loop over all sites
   {
     int pindex = i + 1;
     
+#ifdef VERYLARGENUMS
+    ZF[pindex].log_Z.resize(nnuc);
+    ZF[pindex].log_Zc.resize(nnuc, 0);
+    ZF[pindex].log_Znc.resize(nnuc, 0);
+    
+    ZR[pindex].log_Z.resize(nnuc);
+    ZR[pindex].log_Zc.resize(nnuc, 0);
+    ZR[pindex].log_Znc.resize(nnuc, 0);
+#else
     ZF[pindex].Z.resize(nnuc);
     ZF[pindex].Zc.resize(nnuc, 0);
     ZF[pindex].Znc.resize(nnuc, 0);
@@ -199,7 +250,8 @@ void Subgroup::pre_process()
     ZR[pindex].Z.resize(nnuc);
     ZR[pindex].Zc.resize(nnuc, 0);
     ZR[pindex].Znc.resize(nnuc, 0);
-      
+#endif
+    
     BindingSite* s1f = sites_f[i];
     BindingSite* s1r = sites_r[i];
     
@@ -263,9 +315,19 @@ iterate_partition(vector<Partition>& p, vector<BindingSite*>& sites, int site_in
   Partition& last_part = p[cur_part.last];
   Partition& init_part = p[site_index];
     
+#ifdef VERYLARGENUMS
+  vector<double>& cur_part_logZ      = cur_part.log_Z;
+  vector<double>& cur_part_logZnc    = cur_part.log_Znc;
+  vector<double>& cur_part_logZc     = cur_part.log_Zc;
+#elif defined LARGENUMS
+  vector<long double>& cur_part_Z   = cur_part.Z;
+  vector<long double>& cur_part_Znc = cur_part.Znc;
+  vector<long double>& cur_part_Zc  = cur_part.Zc;
+#else
   vector<double>& cur_part_Z   = cur_part.Z;
   vector<double>& cur_part_Znc = cur_part.Znc;
   vector<double>& cur_part_Zc  = cur_part.Zc;
+#endif
 
   int ncoops = cur_part.coop_site.size();
     
@@ -273,56 +335,101 @@ iterate_partition(vector<Partition>& p, vector<BindingSite*>& sites, int site_in
   
   int nnuc = bindings->getNnuc();
   
-  if (ncoops)
+#ifdef VERYLARGENUMS
+  for (int i=0; i<nnuc; i++)
   {
-    for (int i=0; i<nnuc; i++)
-    {
-      double cur_kv = kv[i];
-      double init_Z = init_part.Z[i];
-      double last_Z = last_part.Z[i];
-      double new_Z  = last_Z*cur_kv;
-      
-      cur_part_Z[i]   = init_Z + new_Z;
-      cur_part_Znc[i] = new_Z;
-      cur_part_Zc[i]  = 0;
-    }
+    double cur_kv = kv[i];
+    double init_logZ = init_part.log_Z[i];
+    double last_logZ = last_part.log_Z[i];
+    double new_Z_ratio   = 1;
+    double new_Znc_ratio = exp2(last_logZ - init_logZ)*cur_kv;
+    double new_Zc_ratio  = 0;
     
     for (int j=0; j<ncoops; j++)
     {
-      double kcoop     = cur_part.coop[j]->getK();
-      int    coop_site = cur_part.coop_site[j]; // the site it coops with
-      int    coop_past = cur_part.coop_past[j];
-      double dfunk     = cur_part.dist_coef[j];
+      double kcoop      = cur_part.coop[j]->getK();
+      int coop_site = cur_part.coop_site[j]; // the site it coops with
+      int coop_past = cur_part.coop_past[j];
+      double dfunk      = cur_part.dist_coef[j];
       kcoop *= dfunk;
       
-      vector<double>& coopkv = sites[coop_site]->kv;
-      
-      for (int k=0; k<nnuc; k++)
-      {
-        double cur_coopkv = coopkv[k];
-        double cur_kv     = kv[k];
-        double last_Z     = p[coop_past].Z[k];
-        double weight     = last_Z*cur_coopkv*cur_kv*kcoop;
-        cur_part_Z[k]  += weight;
-        cur_part_Zc[k] += weight;
-      }
+      double cur_coopkv = sites[coop_site]->kv[i]; // kv of this coop site
+      last_logZ         = p[coop_past].log_Z[i];   // last z before coop
+      new_Zc_ratio += exp2(last_logZ - init_logZ)*cur_coopkv*cur_kv*kcoop;
     }
+    
+    new_Z_ratio = 1 + new_Znc_ratio + new_Zc_ratio;
+    cur_part_logZ[i]   = log2(new_Z_ratio)  + init_logZ;
+    cur_part_logZnc[i] = log2(new_Znc_ratio) + init_logZ;
+    cur_part_logZc[i]  = log2(new_Zc_ratio)  + init_logZ;
   }
-  else
+#elif defined LARGENUMS
+  for (int i=0; i<nnuc; i++)
   {
-    for (int i=0; i<nnuc; i++)
+    long double cur_kv = kv[i];
+    long double init_Z = init_part.Z[i];
+    long double last_Z = last_part.Z[i];
+    long double new_Z  = last_Z*cur_kv;
+    
+    cur_part_Z[i]   = init_Z + new_Z;
+    cur_part_Znc[i] = new_Z;
+    cur_part_Zc[i]  = 0;
+  }
+    
+  for (int j=0; j<ncoops; j++)
+  {
+    long double kcoop      = cur_part.coop[j]->getK();
+    unsigned int coop_site = cur_part.coop_site[j]; // the site it coops with
+    unsigned int coop_past = cur_part.coop_past[j];
+    long double dfunk      = cur_part.dist_coef[j];
+    kcoop *= dfunk;
+    
+    vector<double>& coopkv = sites[coop_site]->kv;
+    
+    for (int k=0; k<nnuc; k++)
     {
-      double cur_kv = kv[i];
-      double init_Z = init_part.Z[i];
-      double last_Z = last_part.Z[i];
-      double new_Z  = last_Z*cur_kv;
-      
-      cur_part_Z[i]   = init_Z + new_Z;
-      cur_part_Znc[i] = new_Z;
-      //cur_part.Zc[i]  = 0;
+      long double cur_coopkv = coopkv[k];
+      long double cur_kv     = kv[k];
+      long double last_Z     = p[coop_past].Z[k];
+      long double weight     = last_Z*cur_coopkv*cur_kv*kcoop;
+      cur_part_Z[k]  += weight;
+      cur_part_Zc[k] += weight;
     }
   }
-      
+#else
+  for (int i=0; i<nnuc; i++)
+  {
+    double cur_kv = kv[i];
+    double init_Z = init_part.Z[i];
+    double last_Z = last_part.Z[i];
+    double new_Z  = last_Z*cur_kv;
+    
+    cur_part_Z[i]   = init_Z + new_Z;
+    cur_part_Znc[i] = new_Z;
+    cur_part_Zc[i]  = 0;
+  }
+    
+  for (int j=0; j<ncoops; j++)
+  {
+    double kcoop      = cur_part.coop[j]->getK();
+    int coop_site = cur_part.coop_site[j]; // the site it coops with
+    int coop_past = cur_part.coop_past[j];
+    double dfunk      = cur_part.dist_coef[j];
+    kcoop *= dfunk;
+    
+    vector<double>& coopkv = sites[coop_site]->kv;
+    
+    for (int k=0; k<nnuc; k++)
+    {
+      double cur_coopkv = coopkv[k];
+      double cur_kv     = kv[k];
+      double last_Z     = p[coop_past].Z[k];
+      double weight     = last_Z*cur_coopkv*cur_kv*kcoop;
+      cur_part_Z[k]  += weight;
+      cur_part_Zc[k] += weight;
+    }
+  }
+#endif
 }
 
      
@@ -337,6 +444,80 @@ void Subgroup::occupancy()
     iterate_partition(ZR, sites_r, i);
   }
    
+#ifdef VERYLARGENUMS
+  vector<double>& log_Z = ZF[nsites].log_Z;
+
+  for (int i=0; i<nsites; i++)
+  { 
+    int r_idx = f2r[i];
+    
+    vector<double>& log_zfnc = ZF[i+1].log_Znc;
+    vector<double>& log_zrnc = ZR[r_idx+1].log_Znc;
+    
+    vector<double>& log_zfc = ZF[i+1].log_Zc;
+    vector<double>& log_zrc = ZR[r_idx+1].log_Zc;
+      
+    BindingSite* site = sites_f[i];
+    
+    for (int j=0; j<nnuc; j++)
+    {
+      
+      double kv = site->kv[j];
+      if ( kv == 0)
+      {
+        site->total_occupancy[j]   = 0;
+        site->mode_occupancy[0][j] = 0;
+      }
+      else
+      {  
+        double nc = exp2(log_zfnc[j] + log_zrnc[j] - log_Z[j])/kv;
+        double cr = exp2(log_zfnc[j] + log_zrc[j]  - log_Z[j])/kv;
+        double cf = exp2(log_zfc[j]  + log_zrnc[j] - log_Z[j])/kv;
+        
+        double f  = nc + cr + cf;
+        
+        if (std::isnan(f)) error("f is NaN");
+        site->total_occupancy[j]   = f;
+        site->mode_occupancy[0][j] = f;
+      }
+    }
+  }
+#elif defined LARGENUMS
+  vector<long double>& Z = ZF[nsites].Z;
+
+  for (int i=0; i<nsites; i++)
+  { 
+    int r_idx = f2r[i];
+    
+    vector<long double>& zfnc = ZF[i+1].Znc;
+    vector<long double>& zrnc = ZR[r_idx+1].Znc;
+    
+    vector<long double>& zfc = ZF[i+1].Zc;
+    vector<long double>& zrc = ZR[r_idx+1].Zc;
+      
+    BindingSite* site = sites_f[i];
+    
+    for (int j=0; j<nnuc; j++)
+    {
+      
+      long double kv = site->kv[j];
+      if ( kv == 0)
+      {
+        site->total_occupancy[j]   = 0;
+        site->mode_occupancy[0][j] = 0;
+      }
+      else
+      {  
+        long double denom = (zfnc[j] + zfc[j])*(zrnc[j] + zrc[j]) - zrc[j]*zfc[j];
+        double f  = denom/(Z[j]*kv);
+        
+        if (std::isnan(f)) error("The partition function overflowed 'long double'. Recompile with VERYLARGENUMS=ON");
+        site->total_occupancy[j]   = f;
+        site->mode_occupancy[0][j] = f;
+      }
+    }
+  }
+#else
   vector<double>& Z = ZF[nsites].Z;
 
   for (int i=0; i<nsites; i++)
@@ -361,14 +542,17 @@ void Subgroup::occupancy()
         site->mode_occupancy[0][j] = 0;
       }
       else
-      {
+      {  
         double denom = (zfnc[j] + zfc[j])*(zrnc[j] + zrc[j]) - zrc[j]*zfc[j];
         double f  = denom/(Z[j]*kv);
+        
+        if (std::isnan(f)) error("The partition function overflowed 'long double'. Recompile with LARGENUMS=ON");
         site->total_occupancy[j]   = f;
         site->mode_occupancy[0][j] = f;
       }
     }
   }
+#endif
 }
       
 

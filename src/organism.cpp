@@ -1156,7 +1156,7 @@ void Organism::restoreKacc()
 void Organism::moveKmax(TF& tf)
 {
   if (mode->getVerbose() >= 3)
-    cerr << "Moving kmax" << endl;
+    cerr << "Moving kmax for tf " << tf.getName() << endl;
 
   int ngenes  = master_genes->size();
 

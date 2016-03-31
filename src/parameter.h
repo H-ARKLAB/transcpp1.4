@@ -20,7 +20,6 @@
 #include <boost/any.hpp>
 
 #include "sequence.h"
-#include "pwm.h"
 
 using namespace std;
 using boost::property_tree::ptree;
@@ -37,6 +36,8 @@ To add new parameter types the user must override the functions that operate on
 the value itself, such as the get and set value functions, checkLimits, and tweak
 */
 
+// a boost uniform double distribution for generating variates. More robust than
+// basic c random functions.
 class UnitDblDist
 {
 private:
@@ -170,7 +171,7 @@ public:
 typedef boost::shared_ptr<Parameter<double>   > double_param_ptr;
 typedef boost::shared_ptr<Parameter<int>      > int_param_ptr;
 typedef boost::shared_ptr<Parameter<Sequence> > seq_param_ptr;
-typedef boost::shared_ptr<Parameter<PWM>      > pwm_param_ptr;
+typedef boost::shared_ptr<Parameter<vector<vector<double> > > > pwm_param_ptr;
 typedef boost::shared_ptr<ParameterInterface>   iparam_ptr;
 
 typedef vector<iparam_ptr> param_ptr_vector;

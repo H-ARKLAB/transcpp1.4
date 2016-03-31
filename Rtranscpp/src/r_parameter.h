@@ -42,7 +42,7 @@ private:
   pwm_param_ptr    param;
   
 public:
-  PWMParameterPtr() : param(pwm_param_ptr(new Parameter<PWM>)) {}
+  PWMParameterPtr() : param(pwm_param_ptr(new Parameter<vector<vector<double> > >)) {}
   PWMParameterPtr(organism_ptr parent, int index);
   
   NumericMatrix getTypeValue(string type);

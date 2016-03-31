@@ -39,12 +39,22 @@ ifdef DEBUG
   FLAGS  = $(USR_FLAGS) -std=c++11 -g -O2 -Wall -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
   RFLAGS = -std=c++11 -c -DNDEBUG -fPIC -O2 -g -I$(BOOST_DIR)
 else
-	FLAGS  = $(USR_FLAGS) -std=c++11 -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
+	FLAGS  = -g $(USR_FLAGS) -std=c++11 -O3 -I$(BOOST_DIR) -I$(PARSA_DIR) $(XML_CFLAGS) $(PFLAGS)
 	RFLAGS = -c -std=c++11 -fPIC -O3 -I$(BOOST_DIR)
 endif
 
+ifdef LARGENUMS
+  FLAGS  += -DLARGENUMS
+  RFLAGS += -DLARGENUMS
+else
+  ifdef VERYLARGENUMS
+    FLAGS  += -DVERYLARGENUMS
+    RFLAGS += -DVERYLARGENUMS
+  endif
+endif
+
 SOURCE = src/quenching.cpp src/sequence.cpp src/score.cpp src/coeffects.cpp \
-src/cooperativity.cpp src/scalefactor.cpp src/fasta.cpp src/mode.cpp src/pwm.cpp \
+src/cooperativity.cpp src/scalefactr.cpp src/fasta.cpp src/mode.cpp src/pwm.cpp \
 src/TF.cpp src/gene.cpp src/nuclei.cpp src/datatable.cpp src/twobit.cpp \
 src/parameter.cpp src/bindings.cpp src/chromatin.cpp  \
 src/bindingsite.cpp src/distance.cpp src/promoter.cpp \
@@ -60,41 +70,41 @@ all: transcpp scramble unfold test_moves
 everything: transcpp scramble unfold test_moves unfold_old Rtranscpp matlab ptranscpp
 
 # the basic binaries required to run and probe the transcription model
-transcpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/transcpp.o
-	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/transcpp.o $(XML_LIBS) $(PFLAGS) -o transcpp $(LDLIBS) 
+transcpp: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/main/transcpp.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/transcpp.o $(XML_LIBS) $(PFLAGS) -o transcpp $(LDLIBS) 
 	
-ptranscpp: $(OBJECT:.o=.$(MPICXX).o) $(LIBPARSA) src/utils.$(MPICXX).o src/ptranscpp.o
-	$(MPICXX) $(OBJECT:.o=.$(MPICXX).o) src/utils.$(MPICXX).o src/ptranscpp.o $(XML_LIBS) $(PFLAGS) -DUSE_BOOST -o ptranscpp $(LDLIBS) 
+ptranscpp: $(OBJECT:.o=.$(MPICXX).o) $(LIBPARSA) src/utils.$(MPICXX).o src/main/ptranscpp.o
+	$(MPICXX) $(OBJECT:.o=.$(MPICXX).o) src/utils.$(MPICXX).o src/main/ptranscpp.o $(XML_LIBS) $(PFLAGS) -DUSE_BOOST -o ptranscpp $(LDLIBS) 
 	
-scramble: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/scramble.o
-	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/scramble.o $(XML_LIBS) $(PFLAGS) -o scramble $(LDLIBS) 
+scramble: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/main/scramble.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/scramble.o $(XML_LIBS) $(PFLAGS) -o scramble $(LDLIBS) 
 	
-unfold: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/unfold.o
-	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/unfold.o $(XML_LIBS) $(PFLAGS) -o unfold $(LDLIBS)
+unfold: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/unfold.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/unfold.o $(XML_LIBS) $(PFLAGS) -o unfold $(LDLIBS)
 	
-unfold_old: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/unfold_old.o
-	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/unfold_old.o $(XML_LIBS) $(PFLAGS) -o unfold_old $(LDLIBS)
+unfold_old: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/unfold_old.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/unfold_old.o $(XML_LIBS) $(PFLAGS) -o unfold_old $(LDLIBS)
 	
-test_moves: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/test_moves.o
-	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/test_moves.o $(XML_LIBS) $(PFLAGS) -o test_moves $(LDLIBS) 
+test_moves: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/main/test_moves.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/test_moves.o $(XML_LIBS) $(PFLAGS) -o test_moves $(LDLIBS) 
 
-src/transcpp.o: src/transcpp.cpp
-	$(CXX) -c $(FLAGS) src/transcpp.cpp -o src/transcpp.o
+src/main/transcpp.o: src/main/transcpp.cpp
+	$(CXX) -c $(FLAGS) -Isrc/ src/main/transcpp.cpp -o src/main/transcpp.o
 	
-src/ptranscpp.o: src/ptranscpp.cpp
-	$(MPICXX) -c $(FLAGS) src/ptranscpp.cpp -DUSE_BOOST -o src/ptranscpp.o
+src/main/ptranscpp.o: src/main/ptranscpp.cpp
+	$(MPICXX) -c $(FLAGS) -Isrc/ src/main/ptranscpp.cpp -DUSE_BOOST -o src/main/ptranscpp.o
 	
-src/scramble.o: src/scramble.cpp
-	$(CXX) -c $(FLAGS) src/scramble.cpp -o src/scramble.o
+src/main/scramble.o: src/main/scramble.cpp
+	$(CXX) -c $(FLAGS) -Isrc/ src/main/scramble.cpp -o src/main/scramble.o
 	
-src/unfold.o: src/unfold.cpp
-	$(CXX) -c $(FLAGS) src/unfold.cpp -o src/unfold.o
+src/main/unfold.o: src/main/unfold.cpp
+	$(CXX) -c $(FLAGS) -Isrc/ src/main/unfold.cpp -o src/main/unfold.o
 	
-src/unfold_old.o: src/unfold_old.cpp
-	$(CXX) -c $(FLAGS) src/unfold_old.cpp -o src/unfold_old.o
+src/main/unfold_old.o: src/main/unfold_old.cpp
+	$(CXX) -c $(FLAGS) -Isrc/ src/main/unfold_old.cpp -o src/main/unfold_old.o
 	
-src/test_moves.o: src/test_moves.cpp
-	$(CXX) -c $(FLAGS) src/test_moves.cpp -o src/test_moves.o
+src/main/test_moves.o: src/main/test_moves.cpp
+	$(CXX) -c $(FLAGS) -Isrc/ src/main/test_moves.cpp -o src/main/test_moves.o
 
 # the utils file needs to be compiled separately so that error and print
 # messages can be passed to R or matlab if used

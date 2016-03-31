@@ -113,6 +113,7 @@ public:
   promoters_ptr getPromoters();
   subgroups_ptr getSubgroups();
   quenching_ptr getQuenching();
+  modifying_ptr getCoeffects() { return coeffects; }
   
   vector<double>&          getRate(Gene& gene) {return Rs[&gene];}
   vector<double>&          getN(Gene& gene)    {return Ns[&gene];}

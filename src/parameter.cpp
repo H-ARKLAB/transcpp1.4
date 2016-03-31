@@ -86,7 +86,7 @@ template< >
 void Parameter<Sequence>::setTypeName() { type = "Sequence"; }
 
 template< >
-void Parameter<PWM>::setTypeName()      { type = "PWM";      }
+void Parameter<vector<vector<double> > >::setTypeName()      { type = "PWM";      }
 
 
 /*    Getters   */
@@ -145,7 +145,7 @@ bool Parameter<Sequence>::checkLimits()
 }
 
 template<> 
-bool Parameter<PWM>::checkLimits()
+bool Parameter<vector<vector<double> > >::checkLimits()
 {
   return false;
 }
@@ -191,14 +191,13 @@ void Parameter<Sequence>::tweak(double delta)
 }
 
 template<> 
-void Parameter<PWM>::tweak(double delta)
+void Parameter<vector<vector<double> > >::tweak(double delta)
 {
   // we should only ever tweak from a move that is in bounds
   out_of_bounds = false;
   previous_value = value;
   
-  vector<vector<double> > & pwm = value.getPWM();
-  int length = pwm.size();
+  int length = value.size();
 
   //for (int i=0; i<length; i++)
   //  cerr << value.getConsensus()[i];
@@ -206,19 +205,8 @@ void Parameter<PWM>::tweak(double delta)
   
   int pos1 = dist.draw() * length;
   int pos2 = dist.draw() * 4;
-  int old_consensus = value.getConsensus()[pos1];
-  //cerr << pos2 << endl;
   
-  pwm[pos1][pos2] += delta;
-
-  value.PSSM2PFM(pwm);
-  value.PFM2PSSM();
-  value.setNscore();
-  value.calc_max_score();
-    
-  int new_consensus = value.getConsensus()[pos1];
-  if (new_consensus != old_consensus)
-    out_of_bounds = true;  
+  value[pos1][pos2] += delta;
 }
 
 template< typename T> 
@@ -255,13 +243,11 @@ void Parameter<Sequence>::scramble(double rand_uniform)
 
 // I am making scrambled pwms according to 
 template<> 
-void Parameter<PWM>::scramble(double rand_uniform)
+void Parameter<vector<vector<double> > >::scramble(double rand_uniform)
 {
   stringstream tmp;
   //seed = (unsigned int) (rand_uniform * 100000);
   node->put("<xmlattr>.type","PSSM");
-  
-  vector<vector<double> > & pwm = value.getPWM();
   
   int pwmpos = 0;
   foreach_(ptree::value_type& v, *node)
@@ -271,12 +257,12 @@ void Parameter<PWM>::scramble(double rand_uniform)
       tmp.str("");
   
       for (int i=0; i<4; i++)
-        pwm[pwmpos][i] = -10 + dist.draw() * 20;
+        value[pwmpos][i] = -10 + dist.draw() * 20;
       
-      tmp << setw(10) << pwm[pwmpos][0] << ";"
-          << setw(10) << pwm[pwmpos][1] << ";"
-          << setw(10) << pwm[pwmpos][2] << ";"
-          << setw(10) << pwm[pwmpos][3];
+      tmp << setw(10) << value[pwmpos][0] << ";"
+          << setw(10) << value[pwmpos][1] << ";"
+          << setw(10) << value[pwmpos][2] << ";"
+          << setw(10) << value[pwmpos][3];
       v.second.put("",tmp.str());
       
       pwmpos++;
@@ -320,17 +306,17 @@ void Parameter<Sequence>::deserialize(void const *buf)
 
 
 template<> 
-void Parameter<PWM>::serialize(void *buf) const
+void Parameter<vector<vector<double> > >::serialize(void *buf) const
 {
-  value.serialize(buf); 
-  //error("serialize not implemented for parameter of type PWM");
+  //value.serialize(buf); 
+  error("serialize not implemented for parameter of type PWM");
 }
 
 template<> 
-void Parameter<PWM>::deserialize(void const *buf)
+void Parameter<vector<vector<double> > >::deserialize(void const *buf)
 {
-  value.deserialize(buf);
-  //error("deserialize not implemented for parameter of type PWM");
+  //value.deserialize(buf);
+  error("deserialize not implemented for parameter of type PWM");
 }
 
 
@@ -347,10 +333,10 @@ size_t Parameter<Sequence>::getSize()
 }
 
 template<> 
-size_t Parameter<PWM>::getSize()
+size_t Parameter<vector<vector<double> > >::getSize()
 {
-  return value.getSize();
-  //error("getSize not implemented for parameter of type PWM");
+  //return value.getSize();
+  error("getSize not implemented for parameter of type PWM");
 }
 
 
@@ -398,7 +384,7 @@ void Parameter<Sequence>::read(ptree& pt)
 }
 
 template<> 
-void Parameter<PWM>::read(ptree& pt)
+void Parameter<vector<vector<double> > >::read(ptree& pt)
 {
   stringstream err;
   err << "Reading of pwm is handled by TF.cpp!" << endl;
@@ -433,7 +419,7 @@ void Parameter<Sequence>::write(ptree& pt, int precision) const
 }
 
 template<> 
-void Parameter<PWM>::write(ptree& pt, int precision) const
+void Parameter<vector<vector<double> > >::write(ptree& pt, int precision) const
 {
   stringstream err;
   err << "ERROR: writing PWM not implemented yet" << endl;
@@ -474,14 +460,13 @@ void Parameter<Sequence>::print(ostream& os)
 }
 
 template<> 
-void Parameter<PWM>::print(ostream& os)
+void Parameter<vector<vector<double> > >::print(ostream& os)
 {
   //value.print(os,2);
-  vector<vector<double> > & pwm = value.getPWM();
   os << setprecision(4)
      << setw(10) << tf_name
      << setw(18) << param_name
-     << setw(12) << "[4x" << pwm.size() << "]"
+     << setw(12) << "[4x" << value.size() << "]"
      << setw(6)  << anneal
      << setw(12) << "NA"
      << setw(12) << "NA"
@@ -491,7 +476,7 @@ void Parameter<PWM>::print(ostream& os)
 template class Parameter<double>;
 template class Parameter<int>;
 template class Parameter<Sequence>;
-template class Parameter<PWM>;
+template class Parameter<vector<vector<double> > >;
 
 
   

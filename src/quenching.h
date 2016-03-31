@@ -124,6 +124,8 @@ public:
   void calc(Gene&);
   void calc(Gene&, TF& actor, TF& target, coeffect_ptr);
 
+  map<BindingSite*, map<TF*, vector<double> > > getEffq(Gene& gene);
+  
   void setDistance(Distance& d);
   void setBindings(bindings_ptr b);
 

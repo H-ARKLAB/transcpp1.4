@@ -18,7 +18,7 @@ PWMParameterPtr::PWMParameterPtr(organism_ptr parent, int index)
   this->index  = index;
   param_ptr_vector& all_params = parent->getAllParameters();
   iparam_ptr iparam = all_params[index];
-  param = boost::dynamic_pointer_cast<Parameter<PWM> >(iparam);
+  param = boost::dynamic_pointer_cast<Parameter<vector<vector<double> > > >(iparam);
 }
 
 SeqParameterPtr::SeqParameterPtr(organism_ptr parent, int index)
@@ -32,7 +32,7 @@ SeqParameterPtr::SeqParameterPtr(organism_ptr parent, int index)
   
 NumericMatrix PWMParameterPtr::getTypeValue(string stype)
 {
-  PWM& pwm = param->getValue();
+  vector<vector<double> >& pwm = param->getValue();
   
   int type;
   if (stype == string("PCM"))
@@ -44,20 +44,20 @@ NumericMatrix PWMParameterPtr::getTypeValue(string stype)
   else 
     error("type must be one of PCM, PFM, PSSM"); 
   
-  vector<vector<double> > matrix = pwm.getPWM(type);
-  int length = matrix.size();
+  //vector<vector<double> > matrix = pwm.getPWM(type);
+  int length = pwm.size();
   NumericMatrix out(length, 4);
   for (int i=0; i<length; i++)
   {
     for (int j=0; j<4; j++)
-      out(i,j) = matrix[i][j];
+      out(i,j) = pwm[i][j];
   }
   return out;
 }
 
 void PWMParameterPtr::setTypeValue(NumericMatrix x, string stype)
 {
-  PWM& pwm = param->getValue();
+  vector<vector<double> >& pwm = param->getValue();
   
   int type;
   if (stype == string("PCM"))
@@ -75,10 +75,10 @@ void PWMParameterPtr::setTypeValue(NumericMatrix x, string stype)
   for (int i=0; i<length; i++)
   {
     for (int j=0; j<4; j++)
-      matrix[i][j] = x(i,j);
+      pwm[i][j] = x(i,j);
   }
   
-  pwm.setPWM(matrix, type);
+  //pwm.setPWM(matrix, type);
   parent->move_all(index);
 }
 

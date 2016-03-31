@@ -33,9 +33,20 @@ struct Partition
   vector<double>   dist_coef; // the distance coefficient of this cooperative interaction
   vector<coop_ptr> coop;
   
+#ifdef LARGENUMS
+  vector<long double> Z;   // the partition function of sites through partition index
+  vector<long double> Zc;  // the partial partition function, cooperating
+  vector<long double> Znc; // the partial partition function, non-cooperating 
+#elif defined VERYLARGENUMS
+  vector<double> log_Z;      // the partition function of sites through partition index
+  vector<double> log_Zc;     // the partial partition function, cooperating
+  vector<double> log_Znc;    // the partial partition function, non-cooperating 
+#else
   vector<double> Z;   // the partition function of sites through partition index
   vector<double> Zc;  // the partial partition function, cooperating
   vector<double> Znc; // the partial partition function, non-cooperating 
+#endif
+  
 };
   
 

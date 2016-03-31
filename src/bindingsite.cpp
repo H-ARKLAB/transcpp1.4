@@ -25,7 +25,7 @@ void printSiteHeader(ostream& os)
      << setw(w) << "strand";
 }
 
-void printSite(BindingSite& b, ostream& os)
+void printSite(const BindingSite& b, ostream& os)
 {
   int w = 10;
   os << setprecision(3)
@@ -78,6 +78,12 @@ bool compareBindingSiteRight(const BindingSite* a, const BindingSite* b)
       return false;
     else
     {
+      printSiteHeader(cerr);
+      cerr << endl;
+      printSite(*a, cerr);
+      cerr << endl;
+      printSite(*b, cerr);
+      cerr << endl;
       error("sites should never be equal!");
       return false;
     }

@@ -25,7 +25,7 @@ public:
   double get_threshold()       { return tf->getThreshold();    }
   int    get_binding_size()    { return tf->getBindingSize();  }
 
-  PWMPtr get_pwm() { return PWMPtr(&tf->getPWMParam()->getValue()); }
+  PWMPtr get_pwm() { return PWMPtr(tf->getPWMPtr()); }
   
   // setters
   void set_name(string name)       { tf->setName(name);        }

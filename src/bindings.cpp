@@ -57,6 +57,30 @@ site_ptr_vector& Bindings::getSites(Gene& gene, TF& tf)
   return gsites[&tf];
 }
 
+void Bindings::setMasterBindingIdx()
+{
+  int ngenes = genes->size();
+  int ntfs   = tfs->size();
+  
+  int idx = 0;
+  
+  for (int i=0; i<ngenes; i++)
+  {
+    Gene& gene = genes->getGene(i);
+    gene_sites_map& gsites = *(sites[&gene]);
+    for (int j=0; j<ntfs; j++)
+    {
+      TF& tf = tfs->getTF(j);
+      site_ptr_vector& tfsites = gsites[&tf];
+      int nsites = tfsites.size();
+      for (int k=0; k<nsites; k++)
+        tfsites[k]->index_in_master_bindings = idx++;
+    }
+  }
+}
+        
+      
+  
 /* these functions are broken, but is also never used, so commented out for now
 bool Bindings::hasScores(Gene& gene, TF& tf)
 {
@@ -229,7 +253,6 @@ void Bindings::createSites(Gene& gene, TF& tf)
   double   kmax      = tf.getKmax();
   double   maxscore  = tf.getMaxScore();
   double   lambda    = tf.getLambda();
-  double   offset    = tf.getPWMOffset();
   double   kns       = tf.getKns(); 
   
   //kns = kns + exp((offset-maxscore)/lambda);
@@ -245,15 +268,16 @@ void Bindings::createSites(Gene& gene, TF& tf)
     double rscore = t.rscore[k];
     
     if (fscore >= threshold)
-      createSite(tmp_sites, gene, tf, k, bsize, fscore, 'F', lambda, offset,kmax,maxscore,v,nmodes,kns);
+      createSite(tmp_sites, gene, tf, k, bsize, fscore, 'F', lambda, kmax,maxscore,v,nmodes,kns);
     if (rscore >= threshold)
-      createSite(tmp_sites, gene, tf, k, bsize, rscore, 'R', lambda, offset,kmax,maxscore,v,nmodes,kns);
+      createSite(tmp_sites, gene, tf, k, bsize, rscore, 'R', lambda, kmax,maxscore,v,nmodes,kns);
 
   }
   if (!mode->getSelfCompetition())
     trimOverlaps(gene,tf);
   
   updateK(gene, tf);
+  //printSites(tf, cerr);
 }
 
 void Bindings::add_to_ordered(Gene& gene, TF& tf)
@@ -277,13 +301,13 @@ void Bindings::add_to_ordered(Gene& gene, TF& tf)
   
 void Bindings::createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
                           int pos, double bsize, double score, char orientation, 
-                          double lambda, double offset, double kmax, double maxscore,vector<double>& v, 
+                          double lambda, double kmax, double maxscore,vector<double>& v, 
                           int nmodes, double kns)
 {
   site_ptr b(new BindingSite);
   b->tf                    = &tf;
   b->orientation           = orientation;
-  b->m                     = pos  - bsize/2;
+  b->m                     = floor(pos  - bsize/2);
   b->n                     = b->m + bsize-1;
   b->score                 = score;
   b->pos                   = pos;
@@ -325,6 +349,7 @@ void Bindings::createSite(site_ptr_vector& tmp_sites, Gene& gene, TF& tf,
   
   b->index_in_site_map = tmp_sites.size();
   tmp_sites.push_back(b);
+  
   //ordered_sites_f[&gene].push_back(b.get());
 }
 

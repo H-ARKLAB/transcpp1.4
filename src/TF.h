@@ -10,6 +10,7 @@
 #define TF_H
 
 #include "parameter.h"
+#include "pwm.h"
 #include "cooperativity.h"
 #include "coeffects.h"
 #include "mode.h"
@@ -31,17 +32,16 @@ class TF : boost::noncopyable
 private: 
   mode_ptr  mode;
   
-  int    index;         // which index is this TF within an organism?
-  
-  pwm_param_ptr energy; // binding energy model
-  string tfname;
-  int       bsize;      // the footprint size of the TF
-  int       offset;     // the offset of the motif within a footprint (NOT IMPLEMENTED YET)
+  int    index;     // which index is this TF within an organism?
+                    
+  PWM       energy; // binding energy model
+  string    tfname; 
+  int       bsize;  // the footprint size of the TF
+  int       offset; // the offset of the motif within a footprint (NOT IMPLEMENTED YET)
                        
   double_param_ptr kmax;       // true binding affinity confounded with relative protein levels
   double_param_ptr threshold;  // a somewhat arbitrary cutoff to use for calling a binding site
   double_param_ptr lambda;     // how much a mutation away from consensus effects ddG
-  double_param_ptr pwm_offset; // the energy offset of a pwm
   
   double Kns; // the nonspecific binding energy
   
@@ -63,8 +63,8 @@ public:
   
   // getters
   const string&  getName() const;
-  const string&  getPWMSource() const {return energy->getValue().getSource();}
-  int            getPWMLength() const {return energy->getValue().length();   }
+  const string&  getPWMSource() {return energy.getSource();}
+  int            getPWMLength() {return energy.length();   }
   double         getThreshold();
   double         getKns() {return Kns;}
   int            getBindingSize() const;
@@ -72,8 +72,7 @@ public:
   double&        getCoef();
   double         getModifiedCoef();
   double         getLambda();
-  double         getPWMOffset() {return pwm_offset->getValue(); }
-  double         getMaxScore() const;
+  double         getMaxScore();
   void           getParameters(param_ptr_vector& p); // pushes parameters onto argument
   void           getAllParameters(param_ptr_vector& p); // pushes parameters onto argument
   bool           ncoops() { return coops.size(); } // used to check if this ever cooperates
@@ -89,12 +88,14 @@ public:
   double_param_ptr getThresholdParam() { return threshold; }
   double_param_ptr getLambdaParam()    { return lambda; }
   double_param_ptr getKmaxParam()      { return kmax; }
-  pwm_param_ptr    getPWMParam()       { return energy;    }
+  pwm_param_ptr    getPWMParam()       { return energy.getPWMParam(); }
+  PWM*             getPWMPtr()         { return &energy; }
+  PWM&             getPWM()            { return energy; }
   
   vector< pair<TF*, coeffect_ptr> >& getTargets() { return coeffects; }   
   
   // setters
-  void setPWMSource(string source) { energy->getValue().setSource(source); }
+  void setPWMSource(string source) { energy.setSource(source); }
   void setNscore();
   void set(ptree& pt); // set entire TF
   void setName(string n);
