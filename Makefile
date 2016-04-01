@@ -84,7 +84,10 @@ unfold: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/unfold.o
 	
 unfold_old: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/unfold_old.o
 	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/unfold_old.o $(XML_LIBS) $(PFLAGS) -o unfold_old $(LDLIBS)
-	
+
+printscore: $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/printscore.o
+	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/printscore.o $(XML_LIBS) $(PFLAGS) -o printscore $(LDLIBS)
+
 test_moves: $(OBJECT:.o=.$(CXX).o) $(LIBPARSA) src/utils.$(CXX).o src/main/test_moves.o
 	$(CXX) $(OBJECT:.o=.$(CXX).o) src/utils.$(CXX).o src/main/test_moves.o $(XML_LIBS) $(PFLAGS) -o test_moves $(LDLIBS) 
 
@@ -102,6 +105,9 @@ src/main/unfold.o: src/main/unfold.cpp
 	
 src/main/unfold_old.o: src/main/unfold_old.cpp
 	$(CXX) -c $(FLAGS) -Isrc/ src/main/unfold_old.cpp -o src/main/unfold_old.o
+	
+src/main/printscore.o: src/main/printscore.cpp
+	$(CXX) -c $(FLAGS) -Isrc/ src/main/printscore.cpp -o src/main/printscore.o
 	
 src/main/test_moves.o: src/main/test_moves.cpp
 	$(CXX) -c $(FLAGS) -Isrc/ src/main/test_moves.cpp -o src/main/test_moves.o
