@@ -123,8 +123,8 @@ int main(int argc, char* argv[])
   int nnuc   = nuclei->size();
   int ndata  = nnuc * ngenes;
   
-  cout << "chisq = " << embryo.get_score() << endl;
-  cout << "rms = " << sqrt(embryo.get_score()/ndata) << endl;
+  cout << " chisq = " << embryo.get_score() << endl;
+  cout << " rms = " << sqrt(embryo.get_score()/ndata) << endl;
   return 0;
 }
 
