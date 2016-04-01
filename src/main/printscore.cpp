@@ -107,12 +107,24 @@ int main(int argc, char* argv[])
   ptree& section_node = root_node.get_child(section_name);
   
   mode_ptr mode(new Mode(infile_name,mode_node));
+  
+  mode->setScoreFunction("sse");
+  mode->setScaleData(false);
+  mode->setPerGene(false);
+  mode->setPerNuc(false);
 
   mode->setVerbose(0);
   Organism embryo(section_node, mode);
   
-  cout << embryo.get_score() << endl;
+  nuclei_ptr nuclei = embryo.getNuclei();
+  genes_ptr  genes  = embryo.getGenes();
   
+  int ngenes = genes->size();
+  int nnuc   = nuclei->size();
+  int ndata  = nnuc * ngenes;
+  
+  cout << "chisq = " << embryo.get_score() << endl;
+  cout << "rms = " << sqrt(embryo.get_score()/ndata) << endl;
   return 0;
 }
 
