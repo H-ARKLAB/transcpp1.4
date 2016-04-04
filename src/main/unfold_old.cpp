@@ -86,6 +86,8 @@ void print_xml(Organism& organism, string& section)
   
   nuclei_ptr nuclei = organism.getNuclei();
   int nnuc = nuclei->size();
+  bindings_ptr bindings = organism.getBindings();
+  bindings->setMasterBindingIdx();
   
   ptree& paramlist_node = paramset_node.add("ParamList","");
   ptree& nnuc_node = paramlist_node.add("Param", "");
@@ -412,6 +414,8 @@ void print_xml(Organism& organism, string& section)
   {
     ptree& construct_node = constructlist_node.add("Construct","");
     Gene& gene = genes->getGene(i);
+    
+    int left = gene.getLeftBound();
     construct_node.put("<xmlattr>.genotype", gene.getName());
     construct_node.put("<xmlattr>.include",  (int) gene.getInclude());
     
@@ -431,8 +435,40 @@ void print_xml(Organism& organism, string& section)
     seq_node.put("<xmlattr>.tweak", (int) gene.getSequenceParam()->isAnnealed());
     seq_node.put("", gene.getSequenceString());
     
-    //ptree& sitelist_node = construct_node.add("BindingSiteList","");
-    construct_node.add("BindingSiteList","");
+    ptree& sitelist_node = construct_node.add("BindingSiteList","");
+    map<TF*, site_ptr_vector>& gsites = bindings->getSites(gene);
+    for (int j=0; j<ntfs; j++)
+    {
+      TF& tf = tfs->getTF(j);
+      vector<double> coefs = tf.getCoefs();
+      int type = 0;
+      if (coefs[0] < 0) type=1;
+      if (coefs.size() == 2) type=2;
+    
+      site_ptr_vector& sites = gsites[&tf];
+      int nsites = sites.size();
+      for (int k=0; k<nsites; k++)
+      {
+        BindingSite& site = *(sites[k]);
+        ptree& bindingsite_node = sitelist_node.add("BindingSite","");
+        bindingsite_node.put("<xmlattr>.index",site.index_in_master_bindings);
+        bindingsite_node.put("<xmlattr>.name",tf.getName());
+        bindingsite_node.put("<xmlattr>.ligand",m[tf.getName()]);
+        bindingsite_node.put("<xmlattr>.m",site.m + left);
+        bindingsite_node.put("<xmlattr>.n",site.n + left);
+        bindingsite_node.put("<xmlattr>.class",type);
+        bindingsite_node.put("<xmlattr>.score",site.score);
+        bindingsite_node.put("<xmlattr>.maxscore",tf.getMaxScore());
+        bindingsite_node.put("<xmlattr>.minscore",0);
+        bindingsite_node.put("<xmlattr>.k",site.K_exp_part_times_kmax);
+        bindingsite_node.put("<xmlattr>.k_index",-1);
+        bindingsite_node.put("<xmlattr>.k_coef",1);
+        bindingsite_node.put("<xmlattr>.k_tweak",0);
+        bindingsite_node.put("<xmlattr>.m_tweak",0);
+        
+      }
+    }
+   
     
     vector<double*>& col = ratedata->getCol(gene.getName());
     ptree& conclist_node = construct_node.add("MrnaConcList","");
@@ -477,6 +513,7 @@ void print_f_xml(Organism& organism, string& gname)
 {
   map<string,string> lmap = ligand_map();
   ptree out;
+  
   ptree& occ_node = out.add("Occupancy","");
   occ_node.put("<xmlattr>.genotype", gname);
   
@@ -1094,28 +1131,42 @@ int main(int argc, char* argv[])
   if (outputxml)
   {
     print_xml(embryo,section_name);
+    return 0;
   }
   
-  if (!has_gname)
-    error("must specify genotype");
-  
-  if (occupancy)
-    print_f_xml(embryo,gname);
-  else if (guts)
-    print_guts_xml(embryo, gname);
-  else if (r)
-    print_r_xml(embryo, gname);
-  else if (activation)
-    print_A_xml(embryo, gname);
-  else if (effectiveF)
-    print_F_xml(embryo, gname);
-  else if (coactivation)
-    print_c_xml(embryo, gname);
-  else if (rate)
-    print_rate_xml(embryo, gname);
+  vector<string> gnames;
+  if (gname == "") // doing all genes
+  {
+    genes_ptr genes = embryo.getGenes();
+    int ngenes = genes->size();
+    for (int i=0; i<ngenes; i++)
+      gnames.push_back(genes->getGene(i).getName());
+  }
   else
-    print_rate_xml(embryo, gname); // default is rate
+    gnames.push_back(gname);
   
+  int n = gnames.size();
+  for (int i=0; i<n; i++)
+  {
+    gname = gnames[i];
+    if (occupancy)
+      print_f_xml(embryo,gname);
+    else if (guts)
+      print_guts_xml(embryo, gname);
+    else if (r)
+      print_r_xml(embryo, gname);
+    else if (activation)
+      print_A_xml(embryo, gname);
+    else if (effectiveF)
+      print_F_xml(embryo, gname);
+    else if (coactivation)
+      print_c_xml(embryo, gname);
+    else if (rate)
+      print_rate_xml(embryo, gname);
+    else
+      print_rate_xml(embryo, gname); // default is rate
+  }
+    
   return 0;
 }
 

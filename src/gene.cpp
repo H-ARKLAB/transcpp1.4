@@ -390,15 +390,15 @@ void GeneContainer::readFastaGenes(ptree& gene_nodes, string& fasta_name)
     if (right_bound == nan && left_bound == nan)
     {
       right_bound = -1; 
-      left_bound  = right_bound - sequence.length();
+      left_bound  = right_bound - sequence.length() + 1;
     } 
     else if (right_bound == nan && left_bound != nan)
     {
-      right_bound = left_bound + sequence.length();
+      right_bound = left_bound + sequence.length() - 1;
     }
     else // we ignore left_bound if right bound is set 
     {
-      left_bound  = right_bound - sequence.length();
+      left_bound  = right_bound - sequence.length() + 1;
     }
     
     string promoter_name  = gene_node.second.get<string>("<xmlattr>.promoter");
@@ -452,15 +452,15 @@ void GeneContainer::readLocalGenes(ptree& gene_nodes)
     if (right_bound == nan && left_bound == nan)
     {
       right_bound = -1; 
-      left_bound  = right_bound - sequence.length();
+      left_bound  = right_bound - sequence.length() + 1;
     } 
     else if (right_bound == nan && left_bound != nan)
     {
-      right_bound = left_bound + sequence.length();
+      right_bound = left_bound + sequence.length() - 1;
     }
     else // we ignore left_bound if right bound is set 
     {
-      left_bound  = right_bound - sequence.length();
+      left_bound  = right_bound - sequence.length() + 1;
     }
     
     string promoter_name  = gene_node.second.get<string>("<xmlattr>.promoter");
