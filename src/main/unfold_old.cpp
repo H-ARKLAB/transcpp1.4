@@ -97,7 +97,7 @@ void print_xml(Organism& organism, string& section)
   ptree& af_node = paramlist_node.add("Param", "");
   af_node.put("<xmlattr>.name","BindingAffinity");
   af_node.put("<xmlattr>.value"     ,"");
-  af_node.put("<xmlattr>.limit_low" ,1);
+  af_node.put("<xmlattr>.limit_low" ,0);
   af_node.put("<xmlattr>.limit_high",1);
   af_node.put("<xmlattr>.tweak"     ,0);
   
@@ -557,15 +557,15 @@ void print_f_xml(Organism& organism, string& gname)
       vector<double> fq;
       for (int k=0; k<nnuc; k++)
       {
+        double tfa = 0;
+        double tfq = 0;
         for (int l=0; l<(int) coefs.size(); l++)
         {
-          double tfa = 0;
-          double tfq = 0;
           if (coefs[l] > 0) tfa += site.mode_occupancy[l][k];
           if (coefs[l] < 0) tfq += site.mode_occupancy[l][k];
-          fa.push_back(tfa);
-          fq.push_back(tfq);
         }
+        fa.push_back(tfa);
+        fq.push_back(tfq);
       }
       stringstream ssfa;
       stringstream ssfq;
@@ -960,6 +960,42 @@ void print_c_xml(Organism& organism, string& gname)
   write(out);
 }
 
+// log odds score printing
+void print_b_xml(Organism& organism, string& gname)
+{
+  map<string,string> lmap = ligand_map();
+  ptree out;
+  ptree& scores_node = out.add("PWM_Scores","");
+  scores_node.put("<xmlattr>.genotype", gname);
+
+  bindings_ptr bindings = organism.getBindings();
+  genes_ptr    genes    = organism.getGenes();
+  tfs_ptr      tfs      = organism.getTFs();
+  Gene& gene            = genes->getGene(gname);
+
+  stringstream ligands;
+  int ntfs = tfs->size();
+  ligands << tfs->getTF(0).getName();
+  for (int i=1; i<ntfs; i++)
+    ligands << " " << tfs->getTF(i).getName();
+    
+  int glength = gene.length();
+  for (int i=0; i<glength; i++)
+  {
+    ptree& score_node = scores_node.add("Score","");
+    score_node.put("<xmlattr>.index", i);
+    score_node.put("<xmlattr>.pos", gene.getLeftBound() + i);
+    for (int j=0; j<ntfs; j++)
+    {
+      TF& tf = tfs->getTF(j);
+      score_node.put("<xmlattr>." + tf.getName(), bindings->getScores(gene, tf).mscore[i]);
+    }
+  }
+  scores_node.put("<xmlattr>.ligands", ligands.str());
+    
+  write(out);
+}
+
 void print_rate_xml(Organism& organism, string& gname)
 {
   ptree out;
@@ -992,7 +1028,7 @@ void print_rate_xml(Organism& organism, string& gname)
 }
   
   
-static const char *optString = "AcFfhMNorsXx:";
+static const char *optString = "AbcFfhMNorsXx:";
 
 static const struct option longOpts[] = {
     { "help",         no_argument,       NULL, 'h' },
@@ -1020,6 +1056,7 @@ void display_usage()
        << "\t --guts       [-N]  prints N,M,FGF,R" << endl
        << "\t --activation [-A]  prints Capf,Caf,CaF,CaFGF" << endl
        << "\t --effectiveF [-A]  prints effective occupancy F" << endl
+       << "\t --logodds    [-b]  prints log odd scores for ligands" << endl
        << "\t --outputxml  [-o]  outputs the old xml format" << endl << endl;
   exit(1);
 }
@@ -1037,6 +1074,7 @@ int main(int argc, char* argv[])
   bool activation   = false;
   bool coactivation = false;
   bool effectiveF   = false;
+  bool logodds      = false;
   bool outputxml    = false;
   bool xmlflag      = false;
   bool rate         = false;
@@ -1074,6 +1112,9 @@ int main(int argc, char* argv[])
         break;
       case 's':
         sequence = true;
+        break;
+      case 'b':
+        logodds = true;
         break;
       case 'X':
         xmlflag = true;
@@ -1161,6 +1202,8 @@ int main(int argc, char* argv[])
       print_F_xml(embryo, gname);
     else if (coactivation)
       print_c_xml(embryo, gname);
+    else if (logodds)
+      print_b_xml(embryo, gname);
     else if (rate)
       print_rate_xml(embryo, gname);
     else
