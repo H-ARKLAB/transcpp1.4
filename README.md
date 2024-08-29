@@ -65,6 +65,7 @@ Rapi.R 파일을 조금 수정해 줘야 합니다.
 # scramble
 transcpp인 xml 파일의 free parameter들을 랜덤하게 섞어주는 명령어
 > scramble <원본 파일> <새로 섞인 파일>
+
 원본파일의 내용 중 anneal="true" 로 되어있는 paramter의 value를 lim_low와 lim_high 사이의 랜덤한 값으로 설정해줌
 
 # transcpp
