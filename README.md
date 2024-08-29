@@ -77,15 +77,26 @@ scramble로 새로 생성한 파일을 사용한다.
 학습과 관련 된 주요 parameter들은 아래와 같다
 
 \<Root\>
+
  \<annealer_input init_T="100000" lambda="0.0001" init_loop="100000"/\>
+ 
  \<move interval="100" gain="3"/\>
+ 
  \<count_criterion freeze_crit="10" freeze_cnt="5"/\>
+ 
  \<mix adaptcoef="10"/\>
+ 
  \<lam tau="100" memLength_mean=".200" memLength_sd="100" criterion="10" freeze_cnt="5"/\>
+ 
  \<Mode\>
+ 
    \<ScoreFunction value="sse"/\> // sse, chisq, pdiff, rms, arkim, sss 가 가능함
+   
    \<Competition value="false" window="500" shift="50"/\>
+   
    \<NumThreads value="16"/\>
+   
    \<SelfCompetition value="true"/\>
+   
  
 # unfold
