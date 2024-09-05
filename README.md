@@ -76,27 +76,17 @@ scramble로 새로 생성한 파일을 사용한다.
 
 학습과 관련 된 주요 parameter들은 아래와 같다
 
-\<Root\>
-
- \<annealer_input init_T="100000" lambda="0.0001" init_loop="100000"/\>
+\<Root\><br/>
+ \<annealer_input init_T="100000" lambda="0.0001" init_loop="100000"/\><br/>
+  \<move interval="100" gain="3"/\><br/>
+ \<count_criterion freeze_crit="10" freeze_cnt="5"/\><br/>
+ \<mix adaptcoef="10"/\><br/>
+ \<lam tau="100" memLength_mean=".200" memLength_sd="100" criterion="10" freeze_cnt="5"/\><br/>
+ \<Mode\><br/>
+   \<ScoreFunction value="sse"/\> // sse, chisq, pdiff, rms, arkim, sss 가 가능함.<br/>
+   \<Competition value="false" window="500" shift="50"/\> //enhancer competition의 설정값 value: 설정 적용 true / false, window : enhancer의 크기, shift : enhancer가 움직이는 크기<br/> 
+   \<NumThreads value="16"/\> // multithreading 설정 값. value: thread 개수 설정. <br/>
+   \<SelfCompetition value="true"/\> // 동일한 종류의 TF의 binding site가 겹칠 때 가장 강한 하나의 binding site만 남길지, 약한 binding site도 모두 고려하여 competition을 적용할지?<br/>
  
- \<move interval="100" gain="3"/\>
- 
- \<count_criterion freeze_crit="10" freeze_cnt="5"/\>
- 
- \<mix adaptcoef="10"/\>
- 
- \<lam tau="100" memLength_mean=".200" memLength_sd="100" criterion="10" freeze_cnt="5"/\>
- 
- \<Mode\>
- 
-   \<ScoreFunction value="sse"/\> // sse, chisq, pdiff, rms, arkim, sss 가 가능함
-   
-   \<Competition value="false" window="500" shift="50"/\>
-   
-   \<NumThreads value="16"/\>
-   
-   \<SelfCompetition value="true"/\>
-   
  
 # unfold
