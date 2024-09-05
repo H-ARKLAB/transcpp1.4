@@ -90,3 +90,32 @@ scramble로 새로 생성한 파일을 사용한다.
  
  
 # unfold
+학습이 끝난 모델의 정보를 확인하는 명령어 <br/>
+ --help    [-h]   print this message <br/>
+ --section [-s]   use section of input file (default Output)<br/>
+ --score          prints the score of the entire fit<br/>
+ --maxscore       prints max score of each TF<br/>
+ --sites          prints binding sites<br/>
+ --occupancy      prints binding site fractional occupancy<br/>
+ --modeocc        prints the occupancy split into tf modes<br/>
+ --effocc         prints the effective (activating) occupancy<br/>
+ --subgroups      prints subgroups<br/>
+ --scores         prints pwm scores<br/>
+ --rate           prints rate for each gene<br/>
+ --R2D            prints R for each subsequence<br/>
+ --N2D            prints N for each subsequence<br/>
+ --T2D            prints T for each subsequence<br/>
+ --data           prints rate data for each gene<br/>
+ --params         prints the parameter table<br/>
+ --check-scale    checks that the scale function works with the scoring function<br/>
+ --invert         if result is a data table, inverts the axes<br/>
+ --gene    [name] prints only for gene with name<br/>
+ --tf name [name] prints only for tf with name<br/>
+
+ 주요 명령어들
+> unfold -i <학습이 끝난 파일> --score //모델의 costfunction 결과값 출력 <br/>
+> unfold -i <학습이 끝난 파일> --data //모델이 fitting할 발현량(data) 출력<br/>
+> unfold -i <학습이 끝난 파일> --rate //fitting된 모델이 계산한 발현량 출력<br/>
+> unfold -i <학습이 끝난 파일> --sites //모델이 찾은 TF bindnig threshold에 따라 고려되는 TFBS 정보 출력<br/>
+> unfold -i <학습이 끝난 파일> --sites --gene <유전자 이름> //특정한 유전자에 결합하는 TF 정보만 출력<br/>
+> unfold -i <학습이 끝난 파일> --occupancy or --modeocc or --effocc //모델이 찾은 parameter로 계산한 각 TFBS의 fractional occupancy들, mode occupancy는 TF의 coefficient가 여러개일 경우 각 mode에 따른 fractional occupancy임. effocc는 activator로서의 fractional occupancy <br/>
